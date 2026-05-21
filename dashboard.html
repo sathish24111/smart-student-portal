@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Smart Student Management Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-body">
+    <!-- Main Shell -->
+    <div class="dashboard-wrapper">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <span class="brand-logo">📍</span>
+                <div>
+                    <h3>GeoPortal</h3>
+                    <p>Student Management</p>
+                </div>
+            </div>
+            
+            <div class="profile-card-mini">
+                <div class="avatar" id="avatar-emoji">🎓</div>
+                <div class="profile-info">
+                    <h4 id="user-display-name">Loading...</h4>
+                    <span class="role-pill" id="user-role-badge">Student</span>
+                </div>
+            </div>
+
+            <!-- Dynamic Sidebar Menus -->
+            <nav class="sidebar-menu">
+                <!-- Student Menu -->
+                <ul id="menu-student" class="menu-list">
+                    <li class="active" onclick="switchTab('student-home')">
+                        <span class="menu-icon">📊</span><span>Overview</span>
+                    </li>
+                    <li onclick="switchTab('student-attendance')">
+                        <span class="menu-icon">📍</span><span>Mark Attendance</span>
+                    </li>
+                    <li onclick="switchTab('student-assignments')">
+                        <span class="menu-icon">📝</span><span>Assignments</span>
+                    </li>
+                    <li onclick="switchTab('student-timetable')">
+                        <span class="menu-icon">📅</span><span>Timetable</span>
+                    </li>
+                    <li onclick="switchTab('student-alerts')">
+                        <span class="menu-icon">🚨</span><span>Inbox Alerts</span>
+                    </li>
+                </ul>
+
+                <!-- Staff Menu -->
+                <ul id="menu-staff" class="menu-list hide">
+                    <li class="active" onclick="switchTab('staff-home')">
+                        <span class="menu-icon">📊</span><span>Staff Overview</span>
+                    </li>
+                    <li onclick="switchTab('staff-sessions')">
+                        <span class="menu-icon">⏱️</span><span>Start Session</span>
+                    </li>
+                    <li onclick="switchTab('staff-grading')">
+                        <span class="menu-icon">📝</span><span>Grade Queue</span>
+                    </li>
+                    <li onclick="switchTab('staff-reports')">
+                        <span class="menu-icon">📋</span><span>Attendance Log</span>
+                    </li>
+                    <li onclick="switchTab('staff-assignments-manage')">
+                        <span class="menu-icon">📁</span><span>Upload Task</span>
+                    </li>
+                </ul>
+
+                <!-- Admin Menu -->
+                <ul id="menu-admin" class="menu-list hide">
+                    <li class="active" onclick="switchTab('admin-home')">
+                        <span class="menu-icon">📊</span><span>Admin Overview</span>
+                    </li>
+                    <li onclick="switchTab('admin-students')">
+                        <span class="menu-icon">🎓</span><span>Manage Students</span>
+                    </li>
+                    <li onclick="switchTab('admin-staff')">
+                        <span class="menu-icon">👨‍🏫</span><span>Manage Staff</span>
+                    </li>
+                    <li onclick="switchTab('admin-courses')">
+                        <span class="menu-icon">🏛️</span><span>Courses & Depts</span>
+                    </li>
+                    <li onclick="switchTab('admin-reports')">
+                        <span class="menu-icon">📈</span><span>Global Audit</span>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-outline-danger btn-block" onclick="handleLogout()">
+                    <span>🚪</span><span>Sign Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header Topbar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h2 id="tab-title">Academic Overview</h2>
+                    <p class="subtitle" id="tab-subtitle">Real-time attendance logs & analytics dashboard</p>
+                </div>
+                <div class="topbar-right">
+                    <div class="date-widget">
+                        <span class="clock-icon">🕒</span>
+                        <span id="live-time-ticker">10:46 AM</span>
+                    </div>
+                    <button class="theme-toggle" id="dash-theme-btn" aria-label="Toggle Dark Mode">🌓</button>
+                </div>
+            </header>
+
+            <!-- =================================================================================== -->
+            <!-- STUDENT MODULE VIEWS -->
+            <!-- =================================================================================== -->
+            
+            <!-- Tab: Student Home -->
+            <section id="tab-student-home" class="tab-pane active">
+                <div class="metrics-grid">
+                    <div class="metric-card shadow-sm border-left-primary">
+                        <div class="metric-icon">📈</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Overall Attendance</span>
+                            <h3 id="student-attendance-percent">0.0%</h3>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" id="student-progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metric-card shadow-sm border-left-success">
+                        <div class="metric-icon">📅</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Present Sessions</span>
+                            <h3 id="student-present-count">0</h3>
+                            <p class="metric-trend text-success">Verified present in classroom</p>
+                        </div>
+                    </div>
+                    <div class="metric-card shadow-sm border-left-danger">
+                        <div class="metric-icon">🚨</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Absent / Late Logs</span>
+                            <h3 id="student-late-absent-count">0</h3>
+                            <p class="metric-trend text-danger" id="attendance-warning-status">No penalty actions</p>
+                        </div>
+                    </div>
+                    <div class="metric-card shadow-sm border-left-warning">
+                        <div class="metric-icon">📝</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Pending Homework</span>
+                            <h3 id="student-pending-assignments">0</h3>
+                            <p class="metric-trend text-warning">Submissions pending review</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layout-grid-2">
+                    <!-- Geolocation Quick Panel -->
+                    <div class="card bg-glass">
+                        <div class="card-header">
+                            <h4>📍 Live Geolocation Marker</h4>
+                            <span class="card-tag active">Fast Check-in</span>
+                        </div>
+                        <div class="card-body text-center py-4">
+                            <div class="radar-box">
+                                <div class="radar-ping"></div>
+                                <span class="radar-emoji">📡</span>
+                            </div>
+                            <h3>Active Classroom Sessions</h3>
+                            <p class="text-muted mb-4">Select an ongoing classroom session to mark your attendance via GPS verification.</p>
+                            <button class="btn btn-primary" onclick="switchTab('student-attendance')">
+                                Go to Geolocation Portal
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Announcements panel -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>📢 Low Attendance Warning inbox</h4>
+                            <span class="badge badge-warning" id="alert-badge-count">0</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="inbox-list" id="student-home-alerts">
+                                <div class="inbox-item-empty">No alerts received. Your academic status is safe!</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Student Attendance Portal (MAIN GEOLOCATION FEATURE) -->
+            <section id="tab-student-attendance" class="tab-pane hide">
+                <div class="layout-grid-3-1">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>🌍 Live Classroom Geolocation Check-In</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="active-session-select">Select Active Lecture</label>
+                                <select id="active-session-select" class="form-control" onchange="loadSessionDetails()">
+                                    <option value="">-- No Active Lectures Found --</option>
+                                </select>
+                            </div>
+
+                            <!-- Map mock visualizer -->
+                            <div class="map-visual-box">
+                                <div class="map-overlay" id="map-msg">
+                                    Select an active session to lock coordinates...
+                                </div>
+                                <div class="map-coordinates" id="map-coords-bubble">
+                                    Center: <span id="map-center-lbl">0.0, 0.0</span> | Radius: <span id="map-radius-lbl">100</span>m
+                                </div>
+                            </div>
+
+                            <!-- Live Coordinates details -->
+                            <div class="geo-details-box">
+                                <div class="coordinate-item">
+                                    <span class="coord-label">Your Latitude:</span>
+                                    <strong id="student-lat-lbl">--</strong>
+                                </div>
+                                <div class="coordinate-item">
+                                    <span class="coord-label">Your Longitude:</span>
+                                    <strong id="student-lng-lbl">--</strong>
+                                </div>
+                                <div class="coordinate-item">
+                                    <span class="coord-label">Distance to Classroom:</span>
+                                    <strong id="student-distance-lbl">--</strong>
+                                </div>
+                            </div>
+
+                            <div id="attendance-status-banner" class="status-banner info hide">
+                                <span class="banner-icon">ℹ️</span>
+                                <span class="banner-text">Verifying parameters...</span>
+                            </div>
+
+                            <button class="btn btn-success btn-lg btn-block mt-4" id="mark-attendance-btn" onclick="submitAttendance()" disabled>
+                                <span>🔒</span><span>Mark Verified Attendance</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Developer Geolocation Simulation Controls -->
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary-light">
+                            <h4>🧪 GPS Spoof & Simulator Controls</h4>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted-small mb-3">To make local evaluation easy, simulate your student's coordinate boundaries relative to the classroom setpoint:</p>
+                            
+                            <div class="radio-group-vertical">
+                                <label class="radio-card active">
+                                    <input type="radio" name="gps-spoof-mode" value="REAL" checked onchange="toggleGPSSpoof()">
+                                    <strong>Real Browser GPS</strong>
+                                    <p>Use HTML5 Geolocation API</p>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="gps-spoof-mode" value="IN_RANGE" onchange="toggleGPSSpoof()">
+                                    <strong class="text-success">In Classroom (Within Geofence)</strong>
+                                    <p>Spoof student within 5 meters of center</p>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="gps-spoof-mode" value="OUT_RANGE" onchange="toggleGPSSpoof()">
+                                    <strong class="text-danger">Off-Campus Cafe (Out of Geofence)</strong>
+                                    <p>Spoof student 3.5 kilometers away</p>
+                                </label>
+                            </div>
+
+                            <button class="btn btn-outline-primary btn-block mt-3" onclick="triggerDeviceCoordinates()">
+                                Refresh Live Coordinates
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Attendance Logs -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h4>📝 Your Verified Attendance Registry</h4>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Date & Time</th>
+                                    <th>Marked GPS Location</th>
+                                    <th>Radius Match</th>
+                                    <th>Status Badge</th>
+                                </tr>
+                            </thead>
+                            <tbody id="student-attendance-table">
+                                <tr>
+                                    <td colspan="5" class="text-center">No attendance logs registered yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Student Assignments -->
+            <section id="tab-student-assignments" class="tab-pane hide">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>📝 Assignments Tasks & Deadline Tracker</h4>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Title & Instructions</th>
+                                    <th>Deadline</th>
+                                    <th>Resource File</th>
+                                    <th>Submission Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="student-assignments-table">
+                                <tr>
+                                    <td colspan="6" class="text-center">Loading homework tasks...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Assignment Upload Modal -->
+                <div id="submit-assignment-modal" class="modal hide">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 id="submit-modal-title">Submit Assignment</h4>
+                            <span class="modal-close" onclick="closeSubmitModal()">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <form id="submission-form" onsubmit="handleAssignmentSubmit(event)">
+                                <input type="hidden" id="submit-assignment-id">
+                                <div class="form-group">
+                                    <label for="submission-file">Upload Assignment File (PDF, DOCX, maximum 10MB)</label>
+                                    <input type="file" id="submission-file" class="form-control-file" accept=".pdf,.doc,.docx" required>
+                                </div>
+                                <div class="form-actions mt-4 text-right">
+                                    <button type="button" class="btn btn-outline" onclick="closeSubmitModal()">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Upload File</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Student Timetable -->
+            <section id="tab-student-timetable" class="tab-pane hide">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>📅 Weekly Timetable Schedule</h4>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="table schedule-table">
+                            <thead>
+                                <tr>
+                                    <th>Day</th>
+                                    <th>Subject & Course Code</th>
+                                    <th>Professor</th>
+                                    <th>Timing Slot</th>
+                                    <th>Classroom Location</th>
+                                </tr>
+                            </thead>
+                            <tbody id="student-timetable-table">
+                                <tr>
+                                    <td colspan="5" class="text-center">No timetable events registered.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Student Alerts -->
+            <section id="tab-student-alerts" class="tab-pane hide">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>🚨 Mock Inbox Mail Alerts</h4>
+                    </div>
+                    <div class="card-body" id="student-alerts-full-list">
+                        <div class="inbox-item-empty">No emails received.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =================================================================================== -->
+            <!-- STAFF MODULE VIEWS -->
+            <!-- =================================================================================== -->
+            
+            <!-- Tab: Staff Home -->
+            <section id="tab-staff-home" class="tab-pane hide">
+                <div class="metrics-grid">
+                    <div class="metric-card shadow-sm border-left-primary">
+                        <div class="metric-icon">👥</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Total Dept Students</span>
+                            <h3 id="staff-student-count">0</h3>
+                            <p class="metric-trend text-primary">Enrolled in your department</p>
+                        </div>
+                    </div>
+                    <div class="metric-card shadow-sm border-left-success">
+                        <div class="metric-icon">⏱️</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Active Sessions</span>
+                            <h3 id="staff-active-sessions-count">0</h3>
+                            <p class="metric-trend text-success">Running attendance windows</p>
+                        </div>
+                    </div>
+                    <div class="metric-card shadow-sm border-left-warning">
+                        <div class="metric-icon">📋</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Submissions to Grade</span>
+                            <h3 id="staff-pending-grades">0</h3>
+                            <p class="metric-trend text-warning">Awaiting review feedback</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layout-grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>⏱️ Current Ongoing Attendance Sessions</h4>
+                        </div>
+                        <div class="card-body table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>GPS Location Set</th>
+                                        <th>Radius</th>
+                                        <th>Expiry Time</th>
+                                        <th>Session Code</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staff-active-sessions-table">
+                                    <tr>
+                                        <td colspan="5" class="text-center">No active attendance sessions started by you.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>📅 Lecture Schedule (Today)</h4>
+                        </div>
+                        <div class="card-body table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>Timing</th>
+                                        <th>Classroom</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staff-timetable-table">
+                                    <tr>
+                                        <td colspan="3" class="text-center">Loading timetable...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Staff Sessions Creator -->
+            <section id="tab-staff-sessions" class="tab-pane hide">
+                <div class="layout-grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>⏰ Create Geofenced Attendance Session</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="attendance-session-form" onsubmit="handleCreateSession(event)">
+                                <div class="form-group">
+                                    <label for="session-subject-select">Select Subject</label>
+                                    <select id="session-subject-select" class="form-control" required>
+                                        <option value="">-- Loading Subjects --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="session-duration">Session Active Duration (Minutes)</label>
+                                    <select id="session-duration" class="form-control" required>
+                                        <option value="10">10 Minutes</option>
+                                        <option value="15" selected>15 Minutes</option>
+                                        <option value="30">30 Minutes</option>
+                                        <option value="60">60 Minutes</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="session-radius">Allowed Geofence Radius (Meters)</label>
+                                    <select id="session-radius" class="form-control" required>
+                                        <option value="20">20 Meters (Small Classroom)</option>
+                                        <option value="50">50 Meters (Large Lecture Hall)</option>
+                                        <option value="100" selected>100 Meters (Standard Boundary)</option>
+                                        <option value="200">200 Meters (Campus Wide)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Set Geofence Coordinates Center (GPS)</label>
+                                    <div class="row">
+                                        <div class="col">
+                                            <input type="number" step="any" id="session-lat" class="form-control" placeholder="Latitude" required>
+                                        </div>
+                                        <div class="col">
+                                            <input type="number" step="any" id="session-lng" class="form-control" placeholder="Longitude" required>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="getCurrentStaffCoordinates()">
+                                        🎯 Lock Center on My Device Coordinate
+                                    </button>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-block mt-4">
+                                    Start Session & Generate QR
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- QR Generator mockup -->
+                    <div class="card text-center" id="session-qr-card">
+                        <div class="card-header">
+                            <h4>🖨️ Geofenced QR Code Generator</h4>
+                        </div>
+                        <div class="card-body py-5">
+                            <div class="qr-mockup-placeholder" id="qr-placeholder">
+                                <span>📱</span>
+                                <p>Start a session to generate active scanning QR</p>
+                            </div>
+                            <div class="hide" id="qr-display-box">
+                                <div class="qr-container">
+                                    <!-- Simple CSS generated mock QR grid -->
+                                    <div class="qr-code-grid"></div>
+                                </div>
+                                <h4 class="mt-4" id="qr-subject-title">Data Structures & Algorithms</h4>
+                                <p class="text-success mb-2">● Active Session Broadcast Running...</p>
+                                <p class="text-muted-small" id="qr-expire-lbl">Expires in: 15 mins</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Staff Grading Queue -->
+            <section id="tab-staff-grading" class="tab-pane hide">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>📝 Student Assignments Submissions Queue</h4>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <div class="form-group max-width-300">
+                            <label for="grading-assignment-select">Filter by Assignment Task</label>
+                            <select id="grading-assignment-select" class="form-control" onchange="loadGradingSubmissions()">
+                                <option value="">-- Loading Assignments --</option>
+                            </select>
+                        </div>
+
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Roll Number</th>
+                                    <th>Submitted Date</th>
+                                    <th>Uploaded homework</th>
+                                    <th>Current Grade</th>
+                                    <th>Action Interface</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staff-grading-table">
+                                <tr>
+                                    <td colspan="6" class="text-center">Select an assignment above to populate the queue.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Grading Modal Dialog -->
+                <div id="grade-submission-modal" class="modal hide">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4>Grade Assignment Submission</h4>
+                            <span class="modal-close" onclick="closeGradeModal()">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <form id="grading-submit-form" onsubmit="handleGradeSubmit(event)">
+                                <input type="hidden" id="grade-submission-id">
+                                <div class="form-group">
+                                    <label for="grade-value-select">Select Grade Mark</label>
+                                    <select id="grade-value-select" class="form-control" required>
+                                        <option value="A+">A+ (Exceptional)</option>
+                                        <option value="A">A (Excellent)</option>
+                                        <option value="B">B (Good)</option>
+                                        <option value="C">C (Satisfactory)</option>
+                                        <option value="D">D (Pass)</option>
+                                        <option value="F">F (Fail)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="grade-feedback">Comments / Evaluation Feedback</label>
+                                    <textarea id="grade-feedback" class="form-control" rows="4" placeholder="Enter academic feedback..."></textarea>
+                                </div>
+                                <div class="form-actions mt-4 text-right">
+                                    <button type="button" class="btn btn-outline" onclick="closeGradeModal()">Cancel</button>
+                                    <button type="submit" class="btn btn-success">Save Grade Card</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Staff Reports & Audits -->
+            <section id="tab-staff-reports" class="tab-pane hide">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>📋 Classroom Attendance Logs Report</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Roll Number</th>
+                                        <th>Subject Session</th>
+                                        <th>Time Marked</th>
+                                        <th>GPS Coordinate Claims</th>
+                                        <th>Audit Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staff-attendance-logs-table">
+                                    <tr>
+                                        <td colspan="6" class="text-center">No logs generated.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Staff Assignments Creator -->
+            <section id="tab-staff-assignments-manage" class="tab-pane hide">
+                <div class="layout-grid-3-2">
+                    <!-- Creator Form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>📝 Create & Broadcast Homework Task</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="create-assignment-form" onsubmit="handleCreateAssignment(event)">
+                                <div class="form-group">
+                                    <label for="assign-subject-select">Select Subject Course</label>
+                                    <select id="assign-subject-select" class="form-control" required>
+                                        <option value="">-- Loading Subjects --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="assign-title">Assignment Title</label>
+                                    <input type="text" id="assign-title" class="form-control" placeholder="e.g. Binary Search Trees Exercise" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="assign-desc">Instructions / Description</label>
+                                    <textarea id="assign-desc" class="form-control" rows="4" placeholder="Enter problem guidelines..." required></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="assign-due">Submission Due Date & Time</label>
+                                    <input type="datetime-local" id="assign-due" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="assign-file">Upload Materials/Template (Optional PDF/DOCX)</label>
+                                    <input type="file" id="assign-file" class="form-control-file" accept=".pdf,.doc,.docx">
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-block mt-4">
+                                    Broadcast Assignment to Department
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Posted assignments list -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>📁 Your Posted Assignments</h4>
+                        </div>
+                        <div class="card-body table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>Title</th>
+                                        <th>Due Date</th>
+                                        <th>Material</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staff-posted-assignments-table">
+                                    <tr>
+                                        <td colspan="4" class="text-center">No assignments posted yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =================================================================================== -->
+            <!-- ADMIN MODULE VIEWS -->
+            <!-- =================================================================================== -->
+            
+            <!-- Tab: Admin Home -->
+            <section id="tab-admin-home" class="tab-pane hide">
+                <div class="metrics-grid">
+                    <div class="metric-card shadow-sm border-left-primary">
+                        <div class="metric-icon">🎓</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Total Students</span>
+                            <h3 id="admin-total-students">0</h3>
+                            <p class="metric-trend text-primary">Registered system-wide</p>
+                        </div>
+                    </div>
+                    <div class="metric-card shadow-sm border-left-success">
+                        <div class="metric-icon">👨‍🏫</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Total Faculty Staff</span>
+                            <h3 id="admin-total-staff">0</h3>
+                            <p class="metric-trend text-success">Active professors & lecturers</p>
+                        </div>
+                    </div>
+                    <div class="metric-card shadow-sm border-left-info">
+                        <div class="metric-icon">🏛️</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Departments</span>
+                            <h3 id="admin-total-depts">0</h3>
+                            <p class="metric-trend text-info">Registered colleges</p>
+                        </div>
+                    </div>
+                    <div class="metric-card shadow-sm border-left-warning">
+                        <div class="metric-icon">📈</div>
+                        <div class="metric-details">
+                            <span class="metric-label">System Average Attendance</span>
+                            <h3 id="admin-avg-attendance">0.0%</h3>
+                            <p class="metric-trend text-warning">Overall target percentage</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layout-grid-2 mt-4">
+                    <div class="card text-center">
+                        <div class="card-header">
+                            <h4>🏫 Departments Matrix</h4>
+                        </div>
+                        <div class="card-body table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Code</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-dept-table-mini">
+                                    <tr>
+                                        <td colspan="3">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card text-center">
+                        <div class="card-header">
+                            <h4>📡 Overall Server Sessions Status</h4>
+                        </div>
+                        <div class="card-body py-5">
+                            <div class="radar-box mx-auto">
+                                <div class="radar-ping"></div>
+                                <span class="radar-emoji">🛰️</span>
+                            </div>
+                            <h3 class="mt-4"><span id="admin-active-sessions-ticker">0</span> Active Sessions</h3>
+                            <p class="text-muted mb-0">Live geofenced attendance windows currently broadcasting system-wide.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Admin Students CRUD -->
+            <section id="tab-admin-students" class="tab-pane hide">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>🎓 Student Registry Repository</h4>
+                        <button class="btn btn-primary btn-sm" onclick="openStudentModal()">+ Add Student</button>
+                    </div>
+                    <div class="card-body">
+                        <!-- Search & filter bar -->
+                        <div class="search-filter-bar mb-3">
+                            <div class="input-with-icon max-width-350">
+                                <span class="field-icon">🔍</span>
+                                <input type="text" id="admin-student-search-input" placeholder="Search by name or roll..." onkeyup="filterStudentsRegistry()">
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Roll Number</th>
+                                        <th>Username</th>
+                                        <th>Email ID</th>
+                                        <th>Department</th>
+                                        <th>Attendance</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-students-table">
+                                    <tr>
+                                        <td colspan="7" class="text-center">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Modal -->
+                <div id="student-modal" class="modal hide">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 id="student-modal-title">Add New Student</h4>
+                            <span class="modal-close" onclick="closeStudentModal()">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <form id="student-form" onsubmit="handleSaveStudent(event)">
+                                <input type="hidden" id="student-edit-id">
+                                <div class="form-group">
+                                    <label for="student-name">Full Name</label>
+                                    <input type="text" id="student-name" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="student-roll">Roll Number</label>
+                                    <input type="text" id="student-roll" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="student-username">Username (Login credential)</label>
+                                    <input type="text" id="student-username" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="student-password">Password</label>
+                                    <input type="password" id="student-password" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="student-email">Email Address</label>
+                                    <input type="email" id="student-email" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="student-dept-select">Department Link</label>
+                                    <select id="student-dept-select" class="form-control" required>
+                                        <option value="">-- Select Department --</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-actions mt-4 text-right">
+                                    <button type="button" class="btn btn-outline" onclick="closeStudentModal()">Cancel</button>
+                                    <button type="submit" class="btn btn-success">Save Record</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Admin Staff CRUD -->
+            <section id="tab-admin-staff" class="tab-pane hide">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>👨‍🏫 Faculty Staff Directory</h4>
+                        <button class="btn btn-primary btn-sm" onclick="openStaffModal()">+ Add Staff</button>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Username</th>
+                                    <th>Email ID</th>
+                                    <th>Phone Number</th>
+                                    <th>Department</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-staff-table">
+                                <tr>
+                                    <td colspan="6" class="text-center">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Staff Modal -->
+                <div id="staff-modal" class="modal hide">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 id="staff-modal-title">Add Faculty Member</h4>
+                            <span class="modal-close" onclick="closeStaffModal()">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <form id="staff-form" onsubmit="handleSaveStaff(event)">
+                                <input type="hidden" id="staff-edit-id">
+                                <div class="form-group">
+                                    <label for="staff-name">Professor Name</label>
+                                    <input type="text" id="staff-name" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="staff-username">Username (Login credential)</label>
+                                    <input type="text" id="staff-username" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="staff-password">Password</label>
+                                    <input type="password" id="staff-password" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="staff-email">Email Address</label>
+                                    <input type="email" id="staff-email" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="staff-phone">Phone Number</label>
+                                    <input type="text" id="staff-phone" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="staff-dept-select">Department Link</label>
+                                    <select id="staff-dept-select" class="form-control" required>
+                                        <option value="">-- Select Department --</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-actions mt-4 text-right">
+                                    <button type="button" class="btn btn-outline" onclick="closeStaffModal()">Cancel</button>
+                                    <button type="submit" class="btn btn-success">Save Record</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Admin Courses Management -->
+            <section id="tab-admin-courses" class="tab-pane hide">
+                <div class="layout-grid-2">
+                    <!-- Dept Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>🏛️ Departments Register</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="dept-form" onsubmit="handleSaveDept(event)" class="inline-creator-form mb-4">
+                                <input type="text" id="dept-name" placeholder="e.g. Mechanical Eng" required class="form-control">
+                                <input type="text" id="dept-code" placeholder="ME" required class="form-control max-width-100">
+                                <button type="submit" class="btn btn-primary">+</button>
+                            </form>
+
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Department Title</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-dept-table-full">
+                                        <tr>
+                                            <td colspan="3" class="text-center">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subject Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>📚 Course Subjects Register</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="subject-form" onsubmit="handleSaveSubject(event)" class="mb-4">
+                                <div class="form-row-three">
+                                    <input type="text" id="sub-name" placeholder="Subject Name" required class="form-control">
+                                    <input type="text" id="sub-code" placeholder="Code (e.g. ME-101)" required class="form-control">
+                                    <select id="sub-dept-select" class="form-control" required>
+                                        <option value="">Dept</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-primary">+</button>
+                                </div>
+                            </form>
+
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Subject</th>
+                                            <th>Department</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-subject-table-full">
+                                        <tr>
+                                            <td colspan="4" class="text-center">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Admin Reports & Global Audit -->
+            <section id="tab-admin-reports" class="tab-pane hide">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>📈 System-Wide Attendance Audit Logs</h4>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Roll Number</th>
+                                    <th>Subject Session</th>
+                                    <th>Date & Time Marked</th>
+                                    <th>Reported GPS coordinates</th>
+                                    <th>Distance Check</th>
+                                    <th>Verification</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-audit-logs-table">
+                                <tr>
+                                    <td colspan="7" class="text-center">No logs generated.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
