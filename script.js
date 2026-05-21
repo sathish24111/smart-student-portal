@@ -1,7 +1,6 @@
 // Javascript Core Engine for Smart Student Management Portal
 
-const API_BASE = "http://192.168.1.15:8080/api";
-
+const API_BASE = "http://localhost:8080/api";
 // State Management
 let currentUser = null; // Contains user session details
 let activeTab = "";
