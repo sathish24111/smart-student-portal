@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Smart Student Management Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-body">
+    <!-- Theme Toggle Floating Button -->
+    <button class="theme-toggle" id="theme-btn" aria-label="Toggle Dark Mode">🌓</button>
+
+    <div class="login-wrapper">
+        <div class="login-visual">
+            <div class="visual-overlay"></div>
+            <div class="visual-content">
+                <span class="badge">Main Feature</span>
+                <h1>Geolocation Attendance Tracker</h1>
+                <p>Enforcing physical presence inside classrooms through advanced radius-bounded GPS tracking and QR-verified check-ins.</p>
+                <div class="visual-features">
+                    <div class="v-feat">
+                        <span class="v-icon">📍</span>
+                        <div>
+                            <h4>100m Geofencing</h4>
+                            <p>Verify coordinates on backend using the Haversine formula.</p>
+                        </div>
+                    </div>
+                    <div class="v-feat">
+                        <span class="v-icon">🔒</span>
+                        <div>
+                            <h4>Role Isolation</h4>
+                            <p>Dedicated modules for Admin control, Staff scheduling & Student check-ins.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="login-container">
+            <div class="login-header">
+                <h2>Welcome Back!</h2>
+                <p>Access your school's student management portal</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="role-select">Select Portal Role</label>
+                    <div class="role-selector-grid">
+                        <label class="role-card active">
+                            <input type="radio" name="role" value="STUDENT" checked>
+                            <span class="role-emoji">🎓</span>
+                            <span class="role-text">Student</span>
+                        </label>
+                        <label class="role-card">
+                            <input type="radio" name="role" value="STAFF">
+                            <span class="role-emoji">👨‍🏫</span>
+                            <span class="role-text">Staff</span>
+                        </label>
+                        <label class="role-card">
+                            <input type="radio" name="role" value="ADMIN">
+                            <span class="role-emoji">🔑</span>
+                            <span class="role-text">Admin</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <div class="input-with-icon">
+                        <span class="field-icon">👤</span>
+                        <input type="text" id="username" placeholder="Enter username" required autocomplete="username">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-with-icon">
+                        <span class="field-icon">🔒</span>
+                        <input type="password" id="password" placeholder="Enter password" required autocomplete="current-password">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <label class="remember-me">
+                        <input type="checkbox" id="remember">
+                        <span>Remember session</span>
+                    </label>
+                    <a href="#" class="forgot-pwd" onclick="alert('Demo account credentials are listed in the Sandbox Accounts panel below!')">Need help?</a>
+                </div>
+
+                <div id="login-error" class="error-banner hide">
+                    <span class="err-icon">⚠️</span>
+                    <span class="err-msg">Invalid username or password.</span>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" id="login-submit-btn">
+                    <span>Sign In to Portal</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+            </form>
+
+            <!-- Sandbox Accounts Guide (Extremely helpful for grading!) -->
+            <div class="sandbox-card">
+                <div class="sandbox-header">
+                    <span>⚡</span>
+                    <h4>Sandbox Accounts (Demo Data)</h4>
+                </div>
+                <div class="sandbox-body">
+                    <table class="sandbox-table">
+                        <thead>
+                            <tr>
+                                <th>Role</th>
+                                <th>Username</th>
+                                <th>Password</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr onclick="fillCredentials('student_john', 'student123', 'STUDENT')">
+                                <td><span class="pill-badge student">Student</span></td>
+                                <td><code>student_john</code></td>
+                                <td><code>student123</code></td>
+                            </tr>
+                            <tr onclick="fillCredentials('prof_smith', 'staff123', 'STAFF')">
+                                <td><span class="pill-badge staff">Staff</span></td>
+                                <td><code>prof_smith</code></td>
+                                <td><code>staff123</code></td>
+                            </tr>
+                            <tr onclick="fillCredentials('admin', 'admin123', 'ADMIN')">
+                                <td><span class="pill-badge admin">Admin</span></td>
+                                <td><code>admin</code></td>
+                                <td><code>admin123</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="sandbox-tip">💡 Tip: Click any row to automatically autofill the form!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

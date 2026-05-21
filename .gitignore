@@ -1,0 +1,21 @@
+# Maven Build Output
+backend/target/
+backend/release/
+
+# IDE settings
+.idea/
+.vscode/
+*.iml
+*.iws
+*.class
+
+# Log files
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# User uploads (profile pictures, PDFs, files submitted by students)
+backend/uploads/
+frontend/uploads/
