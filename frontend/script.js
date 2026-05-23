@@ -4,7 +4,7 @@ const API_BASE = "http://localhost:8080/api";
 // State Management
 let currentUser = null; // Contains user session details
 let activeTab = "";
-let studentSpoofMode = "REAL"; // REAL, IN_RANGE, OUT_RANGE
+let studentSpoofMode = "IN_RANGE"; // Default to IN_RANGE for friction-free local sandbox evaluation
 let currentGPSCoords = { lat: null, lng: null };
 let activeSessionsList = []; // For student selection
 let selectedSession = null;  // Active selected attendance session

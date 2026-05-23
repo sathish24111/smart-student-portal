@@ -254,13 +254,13 @@
                             <p class="text-muted-small mb-3">To make local evaluation easy, simulate your student's coordinate boundaries relative to the classroom setpoint:</p>
                             
                             <div class="radio-group-vertical">
-                                <label class="radio-card active">
-                                    <input type="radio" name="gps-spoof-mode" value="REAL" checked onchange="toggleGPSSpoof()">
+                                <label class="radio-card">
+                                    <input type="radio" name="gps-spoof-mode" value="REAL" onchange="toggleGPSSpoof()">
                                     <strong>Real Browser GPS</strong>
                                     <p>Use HTML5 Geolocation API</p>
                                 </label>
-                                <label class="radio-card">
-                                    <input type="radio" name="gps-spoof-mode" value="IN_RANGE" onchange="toggleGPSSpoof()">
+                                <label class="radio-card active">
+                                    <input type="radio" name="gps-spoof-mode" value="IN_RANGE" checked onchange="toggleGPSSpoof()">
                                     <strong class="text-success">In Classroom (Within Geofence)</strong>
                                     <p>Spoof student within 5 meters of center</p>
                                 </label>
