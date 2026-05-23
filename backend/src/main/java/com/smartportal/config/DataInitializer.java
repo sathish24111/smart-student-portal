@@ -52,7 +52,7 @@ public class DataInitializer implements CommandLineRunner {
         Subject se = subjectRepository.save(new Subject(null, "Software Engineering", "IT-302", itDept));
 
         // 3. Admin Account
-        adminRepository.save(new Admin(null, "admin", "admin123", "admin@portal.edu", "Dr. Richard Winters (System Admin)"));
+        adminRepository.save(new Admin(null, "admin_nexus", "admin123", "admin@portal.edu", "Dr. Richard Winters (System Admin)"));
 
         // 4. Staff Accounts
         Staff profSmith = staffRepository.save(new Staff(null, "prof_smith", "staff123", "smith@portal.edu", "Prof. Albert Smith", "+1-555-0199", csDept));
@@ -71,7 +71,7 @@ public class DataInitializer implements CommandLineRunner {
         timetableRepository.save(new Timetable(null, se, profDavis, "FRIDAY", LocalTime.of(14, 0), LocalTime.of(15, 30), "Room LH-202"));
 
         System.out.println("[DATA INITIALIZER] Seeding complete! Accounts ready for testing:");
-        System.out.println("   Admin: admin / admin123");
+        System.out.println("   Admin: admin_nexus / admin123");
         System.out.println("   Staff: prof_smith / staff123, prof_davis / staff123");
         System.out.println("   Student: student_john / student123, student_jane / student123, student_bob / student123");
     }

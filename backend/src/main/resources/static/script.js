@@ -239,7 +239,7 @@ window.switchTab = function(tabId) {
         'staff-grading': { t: "Homework Grading queue", s: "Evaluate student submission files and submit grading comments" },
         'staff-reports': { t: "Attendance Logs audit", s: "View list of verified coordinates marks from students" },
         'staff-assignments-manage': { t: "Post Assignment Task", s: "Broadcast new homework prompts to student directories" },
-        'admin-home': { t: "System Administration", s: "Global portal metrics, courses data, and active server nodes" },
+        'admin-home': { t: "Daily Snapshot", s: "Real-time status of Nexus Campus academic operations." },
         'admin-students': { t: "Manage Student Registry", s: "Create, view, modify, and delete student accounts" },
         'admin-staff': { t: "Manage Faculty Staff Directory", s: "Create, modify, and manage professor credentials" },
         'admin-courses': { t: "Academic Departments Scheduler", s: "Add courses, list subjects, and organize class divisions" },
@@ -249,6 +249,16 @@ window.switchTab = function(tabId) {
     const details = titles[tabId] || { t: "Portal Dashboard", s: "System Management Portal" };
     document.getElementById("tab-title").textContent = details.t;
     document.getElementById("tab-subtitle").textContent = details.s;
+
+    // Toggle live sync pill visibility for admin snapshot
+    const liveSyncPill = document.getElementById("live-sync-pill");
+    if (liveSyncPill) {
+        if (tabId === 'admin-home') {
+            liveSyncPill.classList.remove('hide');
+        } else {
+            liveSyncPill.classList.add('hide');
+        }
+    }
 
     // Trigger specific Tab reload feeds
     reloadTabFeeds(tabId);

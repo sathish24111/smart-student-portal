@@ -16,9 +16,9 @@
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="sidebar-brand">
-                <span class="brand-logo">📍</span>
+                <span class="brand-logo">⚡</span>
                 <div>
-                    <h3>GeoPortal</h3>
+                    <h3>Track <span style="color: #94a3b8; font-weight: 500;">Pro</span></h3>
                     <p>Student Management</p>
                 </div>
             </div>
@@ -102,18 +102,42 @@
         <main class="main-content">
             <!-- Header Topbar -->
             <header class="topbar">
-                <div class="topbar-left">
-                    <h2 id="tab-title">Academic Overview</h2>
-                    <p class="subtitle" id="tab-subtitle">Real-time attendance logs & analytics dashboard</p>
+                <div class="topbar-left" style="display: flex; align-items: center; gap: 16px;">
+                    <!-- Rounded Mock Search Bar (Mockup styling) -->
+                    <div class="search-container-mock">
+                        <span class="search-icon-mock">🔍</span>
+                        <input type="text" placeholder="Search students, staff or zones..." disabled style="background-color: var(--border-color); color: var(--text-muted); border-radius: 9999px; border: none; padding: 10px 16px 10px 42px; font-size: 13px; font-family: var(--font-primary);">
+                    </div>
                 </div>
-                <div class="topbar-right">
-                    <div class="date-widget">
+                <div class="topbar-right" style="display: flex; align-items: center; gap: 20px;">
+                    <!-- Notification Bell -->
+                    <div class="bell-container" style="position: relative; cursor: pointer; font-size: 18px; display: flex; align-items: center;">
+                        <span>🔔</span>
+                        <span class="bell-dot" style="position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background-color: var(--danger); border-radius: 50%; border: 1.5px solid var(--card-bg);"></span>
+                    </div>
+                    <!-- Help link -->
+                    <a href="#" style="color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 600;" onclick="alert('Need help? Feel free to browse details in the system audit logs!')">Need help?</a>
+                    <!-- User Avatar -->
+                    <div class="avatar-dropdown" style="width: 36px; height: 36px; border-radius: 50%; background-color: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; border: 1px solid var(--primary-light); cursor: pointer;" onclick="alert('Administrator: John Doe\nRole: SYSTEM_ADMIN')">
+                        JD
+                    </div>
+                    <!-- Date & Theme Widgets -->
+                    <div class="date-widget" style="padding: 6px 14px; font-size: 12px;">
                         <span class="clock-icon">🕒</span>
                         <span id="live-time-ticker">10:46 AM</span>
                     </div>
-                    <button class="theme-toggle" id="dash-theme-btn" aria-label="Toggle Dark Mode">🌓</button>
+                    <button class="theme-toggle" id="dash-theme-btn" aria-label="Toggle Dark Mode" style="padding: 8px; font-size: 16px;">🌓</button>
                 </div>
             </header>
+            
+            <!-- Dynamic Subtitle Header below topbar (for Title injections) -->
+            <div class="tab-header-box" style="margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <h2 id="tab-title" style="font-size: 26px; font-weight: 800; letter-spacing: -0.02em;">Academic Overview</h2>
+                    <span id="live-sync-pill" class="live-sync-badge hide">Live System Sync</span>
+                </div>
+                <p class="subtitle" id="tab-subtitle" style="font-size: 13px; color: var(--text-muted); font-weight: 500; margin-top: 2px;">Real-time attendance logs & analytics dashboard</p>
+            </div>
 
             <!-- =================================================================================== -->
             <!-- STUDENT MODULE VIEWS -->
@@ -726,48 +750,130 @@
             
             <!-- Tab: Admin Home -->
             <section id="tab-admin-home" class="tab-pane hide">
+                <!-- Metrics Snapshot Cards -->
                 <div class="metrics-grid">
                     <div class="metric-card shadow-sm border-left-primary">
                         <div class="metric-icon">🎓</div>
                         <div class="metric-details">
                             <span class="metric-label">Total Students</span>
                             <h3 id="admin-total-students">0</h3>
-                            <p class="metric-trend text-primary">Registered system-wide</p>
+                            <div class="metric-trend text-primary" style="margin-top: 4px;">
+                                <span>↗</span><span>+4.2% from yesterday</span>
+                            </div>
                         </div>
                     </div>
                     <div class="metric-card shadow-sm border-left-success">
-                        <div class="metric-icon">👨‍🏫</div>
+                        <div class="metric-icon">🪪</div>
                         <div class="metric-details">
-                            <span class="metric-label">Total Faculty Staff</span>
+                            <span class="metric-label">Staff On Duty</span>
                             <h3 id="admin-total-staff">0</h3>
-                            <p class="metric-trend text-success">Active professors & lecturers</p>
+                            <div class="metric-trend text-success" style="margin-top: 4px;">
+                                <span>●</span><span>98% Deployment rate</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="metric-card shadow-sm border-left-info">
-                        <div class="metric-icon">🏛️</div>
-                        <div class="metric-details">
-                            <span class="metric-label">Departments</span>
-                            <h3 id="admin-total-depts">0</h3>
-                            <p class="metric-trend text-info">Registered colleges</p>
+                    <div class="metric-card shadow-sm border-left-info" style="display: flex; flex-direction: column; align-items: stretch; padding: 24px 24px 16px;">
+                        <div style="display: flex; gap: 20px; align-items: center; width: 100%;">
+                            <div class="metric-icon">🛡️</div>
+                            <div class="metric-details">
+                                <span class="metric-label">Attendance Rate</span>
+                                <h3 id="admin-avg-attendance">0.0%</h3>
+                            </div>
                         </div>
-                    </div>
-                    <div class="metric-card shadow-sm border-left-warning">
-                        <div class="metric-icon">📈</div>
-                        <div class="metric-details">
-                            <span class="metric-label">System Average Attendance</span>
-                            <h3 id="admin-avg-attendance">0.0%</h3>
-                            <p class="metric-trend text-warning">Overall target percentage</p>
+                        <!-- Sparkline Curve below value -->
+                        <div class="sparkline-container">
+                            <svg class="sparkline-svg" viewBox="0 0 100 30" preserveAspectRatio="none">
+                                <path d="M 0 25 C 15 5, 30 18, 45 10 C 60 25, 75 8, 90 22 C 95 15, 100 5, 100 5" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"></path>
+                            </svg>
                         </div>
                     </div>
                 </div>
 
-                <div class="layout-grid-2 mt-4">
-                    <div class="card text-center">
+                <!-- Live Feed Maps & Column Charts Row -->
+                <div class="layout-grid-2" style="margin-top: 24px;">
+                    <!-- Geofencing Live Feed (Overlapping Circles) -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 style="display: flex; align-items: center; gap: 8px;">🗺️ Geofencing Live Feed</h4>
+                            <div style="display: flex; gap: 6px;">
+                                <span class="card-tag active" style="font-size: 9px; padding: 2px 6px;">North Campus</span>
+                                <span class="card-tag" style="font-size: 9px; padding: 2px 6px; background-color: var(--border-color); color: var(--text-muted);">Library Annex</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="geofencing-circles-container">
+                                <div class="circle-map library">
+                                    <span class="circle-label">Library</span>
+                                    <span class="circle-active-count">242 Active</span>
+                                </div>
+                                <div class="circle-map science">
+                                    <span class="circle-label">Science Hall</span>
+                                    <span class="circle-active-count">158 Active</span>
+                                </div>
+                                <div class="map-user-dot"></div>
+                            </div>
+                            <div class="feed-legend">
+                                <div class="legend-item"><span class="legend-dot verified"></span>Verified Entry</div>
+                                <div class="legend-item"><span class="legend-dot unauthorized"></span>Unauthorized Attempt</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Participation Weekly columns -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h4>📊 Participation</h4>
+                                <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Weekly trends by department</span>
+                            </div>
+                            <span style="font-size: 18px; cursor: pointer; color: var(--text-muted);">⋮</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="participation-chart-container">
+                                <div class="chart-columns">
+                                    <div class="chart-column-wrapper">
+                                        <div class="chart-column" style="height: 45%;"></div>
+                                        <span class="column-label">ENG</span>
+                                    </div>
+                                    <div class="chart-column-wrapper">
+                                        <div class="chart-column" style="height: 70%;"></div>
+                                        <span class="column-label">SCI</span>
+                                    </div>
+                                    <div class="chart-column-wrapper">
+                                        <div class="chart-column active" style="height: 90%;"></div>
+                                        <span class="column-label active">ART</span>
+                                    </div>
+                                    <div class="chart-column-wrapper">
+                                        <div class="chart-column" style="height: 55%;"></div>
+                                        <span class="column-label">MAT</span>
+                                    </div>
+                                    <div class="chart-column-wrapper">
+                                        <div class="chart-column" style="height: 75%;"></div>
+                                        <span class="column-label">HUM</span>
+                                    </div>
+                                </div>
+                                <div class="participation-overall-box">
+                                    <div class="participation-overall-row">
+                                        <span>Average Attendance</span>
+                                        <span class="text-primary">88%</span>
+                                    </div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar" style="width: 88%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Matrix & Servers lists -->
+                <div class="layout-grid-2 mt-4" style="margin-top: 24px;">
+                    <div class="card">
                         <div class="card-header">
                             <h4>🏫 Departments Matrix</h4>
                         </div>
-                        <div class="card-body table-responsive">
-                            <table class="table">
+                        <div class="card-body table-responsive" style="padding: 0;">
+                            <table class="table" style="margin-bottom: 0;">
                                 <thead>
                                     <tr>
                                         <th>ID</th>
@@ -777,7 +883,7 @@
                                 </thead>
                                 <tbody id="admin-dept-table-mini">
                                     <tr>
-                                        <td colspan="3">Loading...</td>
+                                        <td colspan="3" class="text-center" style="padding: 24px;">Loading...</td>
                                     </tr>
                                 </tbody>
                             </table>

@@ -14,12 +14,13 @@
     <button class="theme-toggle" id="theme-btn" aria-label="Toggle Dark Mode">🌓</button>
 
     <div class="login-wrapper">
+        <!-- Left Panel - Corporate Branding & Features -->
         <div class="login-visual">
-            <div class="visual-overlay"></div>
             <div class="visual-content">
                 <span class="badge">Main Feature</span>
                 <h1>Geolocation Attendance Tracker</h1>
                 <p>Enforcing physical presence inside classrooms through advanced radius-bounded GPS tracking and QR-verified check-ins.</p>
+                
                 <div class="visual-features">
                     <div class="v-feat">
                         <span class="v-icon">📍</span>
@@ -36,9 +37,14 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="visual-footer">
+                    ———— NEXUS SECURITY PROTOCOL 2.4.0
+                </div>
             </div>
         </div>
 
+        <!-- Right Panel - Login Card Form -->
         <div class="login-container">
             <div class="login-header">
                 <h2>Welcome Back!</h2>
@@ -48,20 +54,20 @@
             <!-- Login Form -->
             <form id="login-form">
                 <div class="form-group">
-                    <label for="role-select">Select Portal Role</label>
+                    <label>Select Portal Role</label>
                     <div class="role-selector-grid">
-                        <label class="role-card active">
-                            <input type="radio" name="role" value="STUDENT" checked>
+                        <label class="role-card active" id="role-card-student">
+                            <input type="radio" name="role" value="STUDENT" checked onchange="updateRoleUI('STUDENT')">
                             <span class="role-emoji">🎓</span>
                             <span class="role-text">Student</span>
                         </label>
-                        <label class="role-card">
-                            <input type="radio" name="role" value="STAFF">
-                            <span class="role-emoji">👨‍🏫</span>
+                        <label class="role-card" id="role-card-staff">
+                            <input type="radio" name="role" value="STAFF" onchange="updateRoleUI('STAFF')">
+                            <span class="role-emoji">🪪</span>
                             <span class="role-text">Staff</span>
                         </label>
-                        <label class="role-card">
-                            <input type="radio" name="role" value="ADMIN">
+                        <label class="role-card" id="role-card-admin">
+                            <input type="radio" name="role" value="ADMIN" onchange="updateRoleUI('ADMIN')">
                             <span class="role-emoji">🔑</span>
                             <span class="role-text">Admin</span>
                         </label>
@@ -103,7 +109,7 @@
                 </button>
             </form>
 
-            <!-- Sandbox Accounts Guide (Extremely helpful for grading!) -->
+            <!-- Sandbox Accounts Helper Table -->
             <div class="sandbox-card">
                 <div class="sandbox-header">
                     <span>⚡</span>
@@ -129,19 +135,32 @@
                                 <td><code>prof_smith</code></td>
                                 <td><code>staff123</code></td>
                             </tr>
-                            <tr onclick="fillCredentials('admin', 'admin123', 'ADMIN')">
+                            <tr onclick="fillCredentials('admin_nexus', 'admin123', 'ADMIN')">
                                 <td><span class="pill-badge admin">Admin</span></td>
-                                <td><code>admin</code></td>
+                                <td><code>admin_nexus</code></td>
                                 <td><code>admin123</code></td>
                             </tr>
                         </tbody>
                     </table>
-                    <p class="sandbox-tip">💡 Tip: Click any row to automatically autofill the form!</p>
+                    <p class="sandbox-tip">⚡ Tip: Click any row to automatically autofill the form!</p>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="script.js"></script>
+    <script>
+        // Inline UI helper to keep role cards styles synchronized instantly with radio changes
+        function updateRoleUI(selectedRole) {
+            document.querySelectorAll('.role-card').forEach(card => card.classList.remove('active'));
+            if (selectedRole === 'STUDENT') {
+                document.getElementById('role-card-student').classList.add('active');
+            } else if (selectedRole === 'STAFF') {
+                document.getElementById('role-card-staff').classList.add('active');
+            } else if (selectedRole === 'ADMIN') {
+                document.getElementById('role-card-admin').classList.add('active');
+            }
+        }
+    </script>
 </body>
 </html>
