@@ -1,6 +1,6 @@
 // Javascript Core Engine for Smart Student Management Portal
 
-const API_BASE = "http://localhost:8080/api";
+const API_BASE = "https://smart-student-portal-hbxw.onrender.com/api";
 // State Management
 let currentUser = null; // Contains user session details
 let activeTab = "";
