@@ -158,7 +158,7 @@ async function checkAuthentication() {
             headers: { "Authorization": `Bearer ${token}` }
         });
 
-        if (!res.ok) throw new Error("Invalid session");
+        if (!res.ok) throw new Error("SESSION_EXPIRED");
 
         currentUser = await res.json();
         
@@ -172,7 +172,14 @@ async function checkAuthentication() {
         // Setup Role Panel views
         setupRoleLayouts(currentUser.role);
     } catch (err) {
-        handleLogout();
+        console.error("Dashboard Initialization Issue:", err);
+        // Only force sign-out if the backend explicitly tells us the session/token is invalid
+        if (err.message === "SESSION_EXPIRED") {
+            handleLogout();
+        } else {
+            // For general layout/DOM script failures, log a warning but DO NOT trigger logout/redirect!
+            console.warn("Recoverable Layout Issue captured: " + err.message);
+        }
     }
 }
 
