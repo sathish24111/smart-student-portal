@@ -1,6 +1,14 @@
 // Javascript Core Engine for Smart Student Management Portal
 
-const API_BASE = "https://smart-student-portal-hbxw.onrender.com/api";
+// Global developer error capture to assist evaluation
+window.onerror = function(message, source, lineno, colno, error) {
+    console.error("Portal Script Error:", message, "at line", lineno);
+    return false;
+};
+
+const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:8080/api"
+    : "https://smart-student-portal-hbxw.onrender.com/api";
 // State Management
 let currentUser = null; // Contains user session details
 let activeTab = "";
@@ -209,8 +217,8 @@ window.switchTab = function(tabId) {
     const sidebarItems = document.querySelectorAll(".sidebar-menu li");
     sidebarItems.forEach(item => item.classList.remove("active"));
     
-    // Find sidebar trigger and activate it
-    const clicker = Array.from(sidebarItems).find(i => i.onclick.toString().includes(tabId));
+    // Find sidebar trigger and activate it (bulletproofed against null event listeners)
+    const clicker = Array.from(sidebarItems).find(i => i.onclick && i.onclick.toString().includes(tabId));
     if (clicker) clicker.classList.add("active");
 
     // Hide all dashboard tabs
