@@ -17,10 +17,22 @@ let currentGPSCoords = { lat: null, lng: null };
 let activeSessionsList = []; // For student selection
 let selectedSession = null;  // Active selected attendance session
 
+// Leaflet Map global references
+let leafletMap = null;
+let userMarker = null;
+let geofenceCircle = null;
+
 // Initialize Page
 document.addEventListener("DOMContentLoaded", () => {
     initTheme();
     initClock();
+
+    // Register Service Worker for PWA support
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js')
+            .then(reg => console.log('Service Worker Registered successfully!', reg.scope))
+            .catch(err => console.error('Service Worker Registration Failed:', err));
+    }
 
     // Route based on current HTML page
     const path = window.location.pathname;
@@ -73,6 +85,16 @@ function initLoginPage() {
     const loginForm = document.getElementById("login-form");
     if (!loginForm) return;
 
+    // Show/hide biometric quick unlock button depending on availability
+    const bioBtn = document.getElementById("biometric-login-btn");
+    if (bioBtn && window.PublicKeyCredential) {
+        if (localStorage.getItem("biometricEnabled") === "true") {
+            bioBtn.style.display = "block";
+        } else {
+            bioBtn.style.display = "none";
+        }
+    }
+
     // Role selector card highlighting
     const roleCards = document.querySelectorAll(".role-card");
     roleCards.forEach(card => {
@@ -115,6 +137,46 @@ function initLoginPage() {
             localStorage.setItem("userRole", data.role);
             localStorage.setItem("userName", data.name);
             localStorage.setItem("userId", data.id);
+
+            // Register web biometrics (WebAuthn) if not set up yet
+            if (window.PublicKeyCredential && localStorage.getItem("biometricEnabled") !== "true") {
+                const registerBio = confirm("Would you like to register Biometrics (Windows Hello / Touch ID) for quick login on this device?");
+                if (registerBio) {
+                    try {
+                        const challenge = new Uint8Array(32);
+                        window.crypto.getRandomValues(challenge);
+                        const options = {
+                            publicKey: {
+                                challenge: challenge,
+                                rp: { name: "GeoPortal" },
+                                user: {
+                                    id: new TextEncoder().encode(data.id.toString()),
+                                    name: username,
+                                    displayName: data.name
+                                },
+                                pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+                                authenticatorSelection: {
+                                    authenticatorAttachment: "platform",
+                                    userVerification: "required"
+                                },
+                                timeout: 60000
+                            }
+                        };
+                        const credential = await navigator.credentials.create(options);
+                        if (credential) {
+                            localStorage.setItem("biometricEnabled", "true");
+                            localStorage.setItem("biometricUsername", username);
+                            localStorage.setItem("biometricRole", data.role);
+                            localStorage.setItem("biometricToken", data.token);
+                            localStorage.setItem("biometricName", data.name);
+                            localStorage.setItem("biometricUserId", data.id);
+                            alert("Biometric credentials registered successfully!");
+                        }
+                    } catch (bioErr) {
+                        console.warn("Biometric registration failed/cancelled:", bioErr);
+                    }
+                }
+            }
 
             // Redirect
             window.location.href = "dashboard.html";
@@ -457,8 +519,14 @@ window.loadSessionDetails = function() {
 
     if (!sessionId) {
         selectedSession = null;
-        document.getElementById("map-msg").style.display = "flex";
-        document.getElementById("map-msg").textContent = "Select an active session to lock coordinates...";
+        const msgDiv = document.getElementById("map-msg");
+        if (msgDiv) {
+            msgDiv.style.display = "flex";
+            msgDiv.textContent = "Select an active session to lock coordinates...";
+        }
+        const mapDiv = document.getElementById("map");
+        if (mapDiv) mapDiv.style.display = "none";
+        
         document.getElementById("mark-attendance-btn").disabled = true;
         document.getElementById("student-distance-lbl").textContent = "--";
         banner.classList.add("hide");
@@ -468,13 +536,72 @@ window.loadSessionDetails = function() {
     selectedSession = activeSessionsList.find(s => s.id == sessionId);
     
     // Update map overlays
-    document.getElementById("map-msg").style.display = "none";
+    const msgDiv = document.getElementById("map-msg");
+    if (msgDiv) msgDiv.style.display = "none";
+    
     document.getElementById("map-center-lbl").textContent = `${selectedSession.latitude.toFixed(4)}, ${selectedSession.longitude.toFixed(4)}`;
     document.getElementById("map-radius-lbl").textContent = selectedSession.radiusMeters;
+
+    // Initialize/Update Leaflet map container
+    updateLeafletMap();
 
     // Refresh range distance checks
     updateLocationRangeAuditor();
 };
+
+function updateLeafletMap() {
+    if (!selectedSession) return;
+
+    const mapDiv = document.getElementById("map");
+    if (!mapDiv) return;
+
+    mapDiv.style.display = "block";
+
+    const sessionLat = selectedSession.latitude;
+    const sessionLng = selectedSession.longitude;
+    const radius = selectedSession.radiusMeters;
+
+    if (!leafletMap) {
+        leafletMap = L.map('map').setView([sessionLat, sessionLng], 16);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        }).addTo(leafletMap);
+    } else {
+        leafletMap.setView([sessionLat, sessionLng], 16);
+        leafletMap.invalidateSize();
+    }
+
+    if (geofenceCircle) {
+        leafletMap.removeLayer(geofenceCircle);
+    }
+    geofenceCircle = L.circle([sessionLat, sessionLng], {
+        color: '#6366F1',
+        fillColor: '#8B5CF6',
+        fillOpacity: 0.15,
+        weight: 1.5,
+        radius: radius
+    }).addTo(leafletMap);
+
+    updateUserMarkerOnMap();
+}
+
+function updateUserMarkerOnMap() {
+    if (!leafletMap || !currentGPSCoords.lat || !currentGPSCoords.lng) return;
+
+    if (userMarker) {
+        leafletMap.removeLayer(userMarker);
+    }
+
+    const userIcon = L.divIcon({
+        className: 'custom-user-marker',
+        html: '<div style="width: 14px; height: 14px; background-color: #06B6D4; border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 0 10px #06B6D4, 0 0 20px #06B6D4;"></div>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+    });
+
+    userMarker = L.marker([currentGPSCoords.lat, currentGPSCoords.lng], { icon: userIcon }).addTo(leafletMap);
+}
 
 // Geolocation GPS Simulator control sync
 window.toggleGPSSpoof = function() {
@@ -611,7 +738,27 @@ async function submitAttendance() {
         // Refresh portal details
         fetchStudentAttendancePortal(token);
     } catch (err) {
-        alert("GPS Attendance Rejected: " + err.message);
+        if (!navigator.onLine || err.message.includes("Failed to fetch") || err.message.includes("network")) {
+            await queueOfflineAttendance({
+                token: token,
+                sessionId: selectedSession.id,
+                latitude: currentGPSCoords.lat,
+                longitude: currentGPSCoords.lng
+            });
+            alert("Offline State Detected: Your attendance check-in has been securely queued. It will automatically sync once your connection is restored.");
+            
+            // Register sync event if service worker ready
+            if ('serviceWorker' in navigator && 'SyncManager' in window) {
+                const reg = await navigator.serviceWorker.ready;
+                try {
+                    await reg.sync.register('sync-attendance');
+                } catch (syncErr) {
+                    console.warn("Background Sync registration failed:", syncErr);
+                }
+            }
+        } else {
+            alert("GPS Attendance Rejected: " + err.message);
+        }
     } finally {
         btn.disabled = false;
         btn.querySelector("span:last-child").textContent = "Mark Verified Attendance";
@@ -1627,4 +1774,70 @@ async function fetchAdminReports(token) {
     } catch (e) {
         console.error(e);
     }
+}
+
+window.handleBiometricLogin = async function() {
+    const errorBanner = document.getElementById("login-error");
+    if (errorBanner) errorBanner.classList.add("hide");
+
+    if (localStorage.getItem("biometricEnabled") !== "true") {
+        alert("Biometrics not registered on this device. Please log in with username/password first.");
+        return;
+    }
+
+    try {
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+        const options = {
+            publicKey: {
+                challenge: challenge,
+                rpId: window.location.hostname || "localhost",
+                userVerification: "required"
+            }
+        };
+        const assertion = await navigator.credentials.get(options);
+        if (assertion) {
+            localStorage.setItem("authToken", localStorage.getItem("biometricToken"));
+            localStorage.setItem("userRole", localStorage.getItem("biometricRole"));
+            localStorage.setItem("userName", localStorage.getItem("biometricName"));
+            localStorage.setItem("userId", localStorage.getItem("biometricUserId"));
+            window.location.href = "dashboard.html";
+        }
+    } catch (err) {
+        console.error("Biometric authentication failed:", err);
+        if (errorBanner) {
+            errorBanner.classList.remove("hide");
+            errorBanner.querySelector(".err-msg").textContent = "Biometric authentication failed: " + err.message;
+        }
+    }
+};
+
+async function queueOfflineAttendance(attendanceData) {
+    if (!('indexedDB' in window)) {
+        let offlineQueue = JSON.parse(localStorage.getItem("offlineAttendanceQueue") || "[]");
+        offlineQueue.push(attendanceData);
+        localStorage.setItem("offlineAttendanceQueue", JSON.stringify(offlineQueue));
+        return;
+    }
+
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open("GeoPortalOfflineDB", 1);
+        req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains("attendanceQueue")) {
+                db.createObjectStore("attendanceQueue", { keyPath: "id", autoIncrement: true });
+            }
+        };
+        req.onsuccess = (e) => {
+            const db = e.target.result;
+            const tx = db.transaction("attendanceQueue", "readwrite");
+            const store = tx.objectStore("attendanceQueue");
+            store.add(attendanceData);
+            tx.oncomplete = () => {
+                resolve();
+            };
+            tx.onerror = () => reject(tx.error);
+        };
+        req.onerror = () => reject(req.error);
+    });
 }

@@ -8,6 +8,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- Leaflet.js CDN Links -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body class="dashboard-body">
     <!-- Main Shell -->
@@ -232,14 +235,13 @@
                                 </select>
                             </div>
 
-                            <!-- Map mock visualizer -->
-                            <div class="map-visual-box">
-                                <div class="map-overlay" id="map-msg">
-                                    Select an active session to lock coordinates...
-                                </div>
-                                <div class="map-coordinates" id="map-coords-bubble">
-                                    Center: <span id="map-center-lbl">0.0, 0.0</span> | Radius: <span id="map-radius-lbl">100</span>m
-                                </div>
+                            <!-- Real Leaflet Map Container -->
+                            <div id="map-msg" style="display: flex; height: 250px; border-radius: 12px; border: 1.5px dashed var(--border-color); margin-bottom: 16px; background: #151f32; align-items: center; justify-content: center; color: var(--text-muted); font-size: 14px; text-align: center; padding: 20px;">
+                                Select an active session to lock coordinates...
+                            </div>
+                            <div id="map" style="display: none; height: 250px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 16px; background: #090d16; z-index: 1;"></div>
+                            <div class="map-coordinates" id="map-coords-bubble">
+                                Center: <span id="map-center-lbl">0.0, 0.0</span> | Radius: <span id="map-radius-lbl">100</span>m
                             </div>
 
                             <!-- Live Coordinates details -->
