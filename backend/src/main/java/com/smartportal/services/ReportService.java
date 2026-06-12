@@ -56,7 +56,7 @@ public class ReportService {
             sb.append(r.getId()).append(",")
               .append("\"").append(r.getStudent().getName().replace("\"", "\"\"")).append("\",")
               .append(r.getStudent().getRollNumber()).append(",")
-              .append("\"").append(r.getSession().getSubject().name.replace("\"", "\"\"")).append("\",")
+              .append("\"").append(r.getSession().getSubject().getName().replace("\"", "\"\"")).append("\",")
               .append("\"").append(r.getSession().getStaff().getName().replace("\"", "\"\"")).append("\",")
               .append(r.getMarkedAt().format(dtf)).append(",")
               .append(r.getLatitude()).append(",")
@@ -98,7 +98,7 @@ public class ReportService {
                 row.createCell(0).setCellValue(r.getId());
                 row.createCell(1).setCellValue(r.getStudent().getName());
                 row.createCell(2).setCellValue(r.getStudent().getRollNumber());
-                row.createCell(3).setCellValue(r.getSession().getSubject().name);
+                row.createCell(3).setCellValue(r.getSession().getSubject().getName());
                 row.createCell(4).setCellValue(r.getSession().getStaff().getName());
                 row.createCell(5).setCellValue(r.getMarkedAt().format(dtf));
                 row.createCell(6).setCellValue(r.getLatitude());
@@ -156,7 +156,7 @@ public class ReportService {
             for (AttendanceRecord r : list) {
                 table.addCell(new PdfPCell(new Paragraph(r.getStudent().getName(), cellFont)));
                 table.addCell(new PdfPCell(new Paragraph(r.getStudent().getRollNumber(), cellFont)));
-                table.addCell(new PdfPCell(new Paragraph(r.getSession().getSubject().name, cellFont)));
+                table.addCell(new PdfPCell(new Paragraph(r.getSession().getSubject().getName(), cellFont)));
                 table.addCell(new PdfPCell(new Paragraph(r.getSession().getStaff().getName(), cellFont)));
                 table.addCell(new PdfPCell(new Paragraph(r.getMarkedAt().format(dtf), cellFont)));
                 

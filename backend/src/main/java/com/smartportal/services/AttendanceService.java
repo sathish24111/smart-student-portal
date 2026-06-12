@@ -77,7 +77,7 @@ public class AttendanceService {
         if (students != null) {
             for (Student s : students) {
                 notificationService.sendNotification("STUDENT", s.getId(), "New Attendance Session Started", 
-                        "An active attendance session has been initialized for " + subject.name);
+                        "An active attendance session has been initialized for " + subject.getName());
             }
         }
 
