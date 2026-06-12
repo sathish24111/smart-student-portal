@@ -196,4 +196,65 @@ public class AttendanceController {
         }
         return ResponseEntity.ok(recordRepository.findAll());
     }
+
+    // 7. Staff or Admin marks attendance manually for a student
+    @PostMapping("/manual")
+    public ResponseEntity<?> markAttendanceManually(
+            @RequestHeader("Authorization") String token,
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest servletRequest) {
+
+        Optional<AuthService.UserSession> sessionOpt = authService.validateToken(token);
+        if (sessionOpt.isEmpty() ||
+                (!"STAFF".equalsIgnoreCase(sessionOpt.get().getRole()) &&
+                 !"ADMIN".equalsIgnoreCase(sessionOpt.get().getRole()))) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized access. Only Staff or Admin can mark attendance manually."));
+        }
+
+        try {
+            Long sessionId = Long.valueOf(request.get("sessionId").toString());
+            Long studentId = Long.valueOf(request.get("studentId").toString());
+            String status = request.get("status").toString(); // PRESENT, LATE, ABSENT
+            String ipAddress = getClientIp(servletRequest);
+
+            AttendanceRecord record = attendanceService.markAttendanceManually(sessionId, studentId, status, ipAddress);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Manual attendance marked successfully!",
+                    "record", record
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Error marking attendance manually: " + e.getMessage()));
+        }
+    }
+
+    // 8. Get sessions for the logged in staff or admin
+    @GetMapping("/sessions")
+    public ResponseEntity<?> getSessions(@RequestHeader("Authorization") String token) {
+        Optional<AuthService.UserSession> sessionOpt = authService.validateToken(token);
+        if (sessionOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized."));
+        }
+
+        String role = sessionOpt.get().getRole();
+        if ("STAFF".equalsIgnoreCase(role)) {
+            return ResponseEntity.ok(sessionRepository.findByStaffId(sessionOpt.get().getId()));
+        } else if ("ADMIN".equalsIgnoreCase(role)) {
+            return ResponseEntity.ok(sessionRepository.findAll());
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized role access."));
+        }
+    }
+
+    // 9. Staff or Admin lists all students
+    @GetMapping("/students")
+    public ResponseEntity<?> listStudents(@RequestHeader("Authorization") String token) {
+        Optional<AuthService.UserSession> sessionOpt = authService.validateToken(token);
+        if (sessionOpt.isEmpty() ||
+                (!"STAFF".equalsIgnoreCase(sessionOpt.get().getRole()) &&
+                 !"ADMIN".equalsIgnoreCase(sessionOpt.get().getRole()))) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized."));
+        }
+        return ResponseEntity.ok(studentRepository.findAll());
+    }
 }

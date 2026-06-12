@@ -170,6 +170,43 @@ public class AttendanceService {
     }
 
     @Transactional
+    public AttendanceRecord markAttendanceManually(Long sessionId, Long studentId, String status, String ipAddress) throws Exception {
+        AttendanceSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new Exception("Attendance session not found."));
+
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new Exception("Student not found."));
+
+        Optional<AttendanceRecord> existingRecord = recordRepository.findBySessionIdAndStudentId(sessionId, studentId);
+        AttendanceRecord record;
+        if (existingRecord.isPresent()) {
+            record = existingRecord.get();
+        } else {
+            record = new AttendanceRecord();
+            record.setSession(session);
+            record.setStudent(student);
+            record.setLatitude(session.getLatitude());
+            record.setLongitude(session.getLongitude());
+        }
+
+        record.setMarkedAt(LocalDateTime.now());
+        record.setIsVerified(true);
+        record.setStatus(status.toUpperCase());
+
+        AttendanceRecord savedRecord = recordRepository.save(record);
+
+        // Update statistics
+        recalculateAttendancePercentage(student);
+
+        // Log action & notification
+        auditLogService.logAction("STAFF", student.getUsername(), "MANUAL_ATTENDANCE_MARK_" + status, ipAddress);
+        notificationService.sendNotification("STUDENT", student.getId(), "Attendance Updated Manually",
+                String.format("Your attendance for session on %s has been manually set to %s.", session.getSubject().getName(), status));
+
+        return savedRecord;
+    }
+
+    @Transactional
     public FaceProfile registerFace(Long studentId, String embeddingVector) throws Exception {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new Exception("Student not found."));

@@ -374,6 +374,7 @@ function reloadTabFeeds(tabId) {
     } else if (tabId === "staff-reports") {
         fetchStaffReports(token);
         loadReportStudentsList('STAFF');
+        loadManualAttendanceDropdowns('STAFF');
     } else if (tabId === "staff-assignments-manage") {
         fetchStaffAssignmentsManage(token);
     } else if (tabId === "staff-leaves") {
@@ -389,6 +390,7 @@ function reloadTabFeeds(tabId) {
     } else if (tabId === "admin-reports") {
         fetchAdminReports(token);
         loadReportStudentsList('ADMIN');
+        loadManualAttendanceDropdowns('ADMIN');
     } else if (tabId === "admin-leaves") {
         fetchAdminLeaves(token);
     }
@@ -2462,6 +2464,98 @@ window.handleExportReport = async function(e, role) {
         window.URL.revokeObjectURL(downloadUrl);
     } catch (err) {
         alert("Report Download Failed: " + err.message);
+    }
+};
+
+async function loadManualAttendanceDropdowns(role) {
+    const prefix = role.toLowerCase();
+    const studentSelect = document.getElementById(`${prefix}-manual-student-select`);
+    const sessionSelect = document.getElementById(`${prefix}-manual-session-select`);
+    if (!studentSelect || !sessionSelect) return;
+
+    const token = localStorage.getItem("authToken");
+    try {
+        const studentRes = await fetch(`${API_BASE}/attendance/students`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (studentRes.ok) {
+            const students = await studentRes.json();
+            studentSelect.innerHTML = `<option value="">-- Select Student --</option>`;
+            students.forEach(s => {
+                const opt = document.createElement("option");
+                opt.value = s.id;
+                opt.textContent = `${s.name} (${s.rollNumber})`;
+                studentSelect.appendChild(opt);
+            });
+        }
+
+        const sessionRes = await fetch(`${API_BASE}/attendance/sessions`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (sessionRes.ok) {
+            const sessions = await sessionRes.json();
+            sessionSelect.innerHTML = `<option value="">-- Select Session --</option>`;
+            sessions.forEach(s => {
+                const dateStr = new Date(s.createdAt).toLocaleString();
+                const opt = document.createElement("option");
+                opt.value = s.id;
+                opt.textContent = `${s.subject.name} - ${dateStr} (by ${s.staff.name})`;
+                sessionSelect.appendChild(opt);
+            });
+        }
+    } catch (err) {
+        console.error("Error loading manual attendance dropdowns:", err);
+    }
+}
+
+window.submitManualAttendance = async function(e, role) {
+    e.preventDefault();
+    const token = localStorage.getItem("authToken");
+    const prefix = role.toLowerCase();
+
+    const studentId = document.getElementById(`${prefix}-manual-student-select`).value;
+    const sessionId = document.getElementById(`${prefix}-manual-session-select`).value;
+    const status = document.getElementById(`${prefix}-manual-status-select`).value;
+    const submitBtn = document.getElementById(`${prefix}-manual-submit-btn`);
+
+    if (!studentId || !sessionId) {
+        alert("Please select both a student and a session.");
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.querySelector("span:last-child").textContent = "Submitting...";
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/attendance/manual`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ studentId, sessionId, status })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to mark manual attendance.");
+
+        alert("Manual attendance marked successfully!");
+        document.getElementById(`${prefix}-manual-attendance-form`).reset();
+        
+        if (role === "STAFF") {
+            fetchStaffReports(token);
+        } else if (role === "ADMIN") {
+            fetchAdminReports(token);
+        }
+    } catch (err) {
+        alert("Error: " + err.message);
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.querySelector("span:last-child").textContent = "Mark Attendance";
+        }
     }
 };
 

@@ -810,6 +810,40 @@
                     </div>
                 </div>
 
+                <!-- Manual Attendance Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>✍️ Mark Manual Attendance</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="staff-manual-attendance-form" onsubmit="submitManualAttendance(event, 'STAFF')" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+                            <div class="form-group" style="margin-bottom: 0; flex: 1.5; min-width: 200px;">
+                                <label for="staff-manual-student-select">Select Student</label>
+                                <select id="staff-manual-student-select" class="form-control" required>
+                                    <option value="">-- Select Student --</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; flex: 1.5; min-width: 200px;">
+                                <label for="staff-manual-session-select">Select Session</label>
+                                <select id="staff-manual-session-select" class="form-control" required>
+                                    <option value="">-- Select Session --</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 120px;">
+                                <label for="staff-manual-status-select">Status</label>
+                                <select id="staff-manual-status-select" class="form-control" required>
+                                    <option value="PRESENT">Present</option>
+                                    <option value="LATE">Late</option>
+                                    <option value="ABSENT">Absent</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="staff-manual-submit-btn">
+                                <span>✍️</span><span>Mark Attendance</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
                 <div class="card">
                     <div class="card-header">
                         <h4>📋 Classroom Attendance Logs Report</h4>
@@ -1387,6 +1421,40 @@
                             </div>
                             <button type="submit" class="btn btn-primary">
                                 <span>📥</span><span>Download Report</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Manual Attendance Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>✍️ Mark Manual Attendance</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="admin-manual-attendance-form" onsubmit="submitManualAttendance(event, 'ADMIN')" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+                            <div class="form-group" style="margin-bottom: 0; flex: 1.5; min-width: 200px;">
+                                <label for="admin-manual-student-select">Select Student</label>
+                                <select id="admin-manual-student-select" class="form-control" required>
+                                    <option value="">-- Select Student --</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; flex: 1.5; min-width: 200px;">
+                                <label for="admin-manual-session-select">Select Session</label>
+                                <select id="admin-manual-session-select" class="form-control" required>
+                                    <option value="">-- Select Session --</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 120px;">
+                                <label for="admin-manual-status-select">Status</label>
+                                <select id="admin-manual-status-select" class="form-control" required>
+                                    <option value="PRESENT">Present</option>
+                                    <option value="LATE">Late</option>
+                                    <option value="ABSENT">Absent</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="admin-manual-submit-btn">
+                                <span>✍️</span><span>Mark Attendance</span>
                             </button>
                         </form>
                     </div>
