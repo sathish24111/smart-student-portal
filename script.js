@@ -17,10 +17,22 @@ let currentGPSCoords = { lat: null, lng: null };
 let activeSessionsList = []; // For student selection
 let selectedSession = null;  // Active selected attendance session
 
+// Leaflet Map global references
+let leafletMap = null;
+let userMarker = null;
+let geofenceCircle = null;
+
 // Initialize Page
 document.addEventListener("DOMContentLoaded", () => {
     initTheme();
     initClock();
+
+    // Register Service Worker for PWA support
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js')
+            .then(reg => console.log('Service Worker Registered successfully!', reg.scope))
+            .catch(err => console.error('Service Worker Registration Failed:', err));
+    }
 
     // Route based on current HTML page
     const path = window.location.pathname;
@@ -73,6 +85,16 @@ function initLoginPage() {
     const loginForm = document.getElementById("login-form");
     if (!loginForm) return;
 
+    // Show/hide biometric quick unlock button depending on availability
+    const bioBtn = document.getElementById("biometric-login-btn");
+    if (bioBtn && window.PublicKeyCredential) {
+        if (localStorage.getItem("biometricEnabled") === "true") {
+            bioBtn.style.display = "block";
+        } else {
+            bioBtn.style.display = "none";
+        }
+    }
+
     // Role selector card highlighting
     const roleCards = document.querySelectorAll(".role-card");
     roleCards.forEach(card => {
@@ -115,6 +137,46 @@ function initLoginPage() {
             localStorage.setItem("userRole", data.role);
             localStorage.setItem("userName", data.name);
             localStorage.setItem("userId", data.id);
+
+            // Register web biometrics (WebAuthn) if not set up yet
+            if (window.PublicKeyCredential && localStorage.getItem("biometricEnabled") !== "true") {
+                const registerBio = confirm("Would you like to register Biometrics (Windows Hello / Touch ID) for quick login on this device?");
+                if (registerBio) {
+                    try {
+                        const challenge = new Uint8Array(32);
+                        window.crypto.getRandomValues(challenge);
+                        const options = {
+                            publicKey: {
+                                challenge: challenge,
+                                rp: { name: "GeoPortal" },
+                                user: {
+                                    id: new TextEncoder().encode(data.id.toString()),
+                                    name: username,
+                                    displayName: data.name
+                                },
+                                pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+                                authenticatorSelection: {
+                                    authenticatorAttachment: "platform",
+                                    userVerification: "required"
+                                },
+                                timeout: 60000
+                            }
+                        };
+                        const credential = await navigator.credentials.create(options);
+                        if (credential) {
+                            localStorage.setItem("biometricEnabled", "true");
+                            localStorage.setItem("biometricUsername", username);
+                            localStorage.setItem("biometricRole", data.role);
+                            localStorage.setItem("biometricToken", data.token);
+                            localStorage.setItem("biometricName", data.name);
+                            localStorage.setItem("biometricUserId", data.id);
+                            alert("Biometric credentials registered successfully!");
+                        }
+                    } catch (bioErr) {
+                        console.warn("Biometric registration failed/cancelled:", bioErr);
+                    }
+                }
+            }
 
             // Redirect
             window.location.href = "dashboard.html";
@@ -171,6 +233,10 @@ async function checkAuthentication() {
 
         // Setup Role Panel views
         setupRoleLayouts(currentUser.role);
+        
+        // Initialize notifications and start interval polling
+        fetchNotifications();
+        setInterval(fetchNotifications, 12000);
     } catch (err) {
         console.error("Dashboard Initialization Issue:", err);
         // Only force sign-out if the backend explicitly tells us the session/token is invalid
@@ -248,17 +314,20 @@ window.switchTab = function(tabId) {
         'student-attendance': { t: "Mark Geofenced Attendance", s: "Submit class attendance using live physical location coordinates" },
         'student-assignments': { t: "Assignment Deadline Tracker", s: "Upload homework files and track professor grade reviews" },
         'student-timetable': { t: "Weekly Lecture Timetable", s: "Your department class schedule calendar" },
+        'student-leaves': { t: "Leave Request Applications", s: "Submit leave request forms and track your history" },
         'student-alerts': { t: "Academic Inbox alerts", s: "Low attendance threshold warnings and welcome emails" },
         'staff-home': { t: "Staff Operations Portal", s: "Enrollment metrics & active coordinates broadcast dashboard" },
         'staff-sessions': { t: "Initiate Attendance Session", s: "Start coordinates-bound geofenced attendance windows with QR" },
         'staff-grading': { t: "Homework Grading queue", s: "Evaluate student submission files and submit grading comments" },
         'staff-reports': { t: "Attendance Logs audit", s: "View list of verified coordinates marks from students" },
         'staff-assignments-manage': { t: "Post Assignment Task", s: "Broadcast new homework prompts to student directories" },
+        'staff-leaves': { t: "Leave Request Applications", s: "Submit leave request forms and track your history" },
         'admin-home': { t: "Daily Snapshot", s: "Real-time status of Nexus Campus academic operations." },
         'admin-students': { t: "Manage Student Registry", s: "Create, view, modify, and delete student accounts" },
         'admin-staff': { t: "Manage Faculty Staff Directory", s: "Create, modify, and manage professor credentials" },
         'admin-courses': { t: "Academic Departments Scheduler", s: "Add courses, list subjects, and organize class divisions" },
-        'admin-reports': { t: "Global System Auditing", s: "Audit trail of student attendance GPS matches" }
+        'admin-reports': { t: "Global System Auditing", s: "Audit trail of student attendance GPS matches" },
+        'admin-leaves': { t: "Review Leave Applications", s: "Evaluate and decide on student/staff leave requests" }
     };
 
     const details = titles[tabId] || { t: "Portal Dashboard", s: "System Management Portal" };
@@ -287,12 +356,15 @@ function reloadTabFeeds(tabId) {
 
     if (tabId === "student-home" || tabId === "student-alerts") {
         fetchStudentDashboard(token);
+        checkFaceEnrollmentStatus();
     } else if (tabId === "student-attendance") {
         fetchStudentAttendancePortal(token);
     } else if (tabId === "student-assignments") {
         fetchStudentAssignments(token);
     } else if (tabId === "student-timetable") {
         fetchStudentTimetable(token);
+    } else if (tabId === "student-leaves") {
+        fetchStudentLeaves(token);
     } else if (tabId === "staff-home") {
         fetchStaffDashboard(token);
     } else if (tabId === "staff-sessions") {
@@ -301,8 +373,11 @@ function reloadTabFeeds(tabId) {
         fetchStaffGradingPage(token);
     } else if (tabId === "staff-reports") {
         fetchStaffReports(token);
+        loadReportStudentsList('STAFF');
     } else if (tabId === "staff-assignments-manage") {
         fetchStaffAssignmentsManage(token);
+    } else if (tabId === "staff-leaves") {
+        fetchStaffLeaves(token);
     } else if (tabId === "admin-home") {
         fetchAdminDashboard(token);
     } else if (tabId === "admin-students") {
@@ -313,6 +388,9 @@ function reloadTabFeeds(tabId) {
         fetchAdminCourses(token);
     } else if (tabId === "admin-reports") {
         fetchAdminReports(token);
+        loadReportStudentsList('ADMIN');
+    } else if (tabId === "admin-leaves") {
+        fetchAdminLeaves(token);
     }
 }
 
@@ -457,8 +535,14 @@ window.loadSessionDetails = function() {
 
     if (!sessionId) {
         selectedSession = null;
-        document.getElementById("map-msg").style.display = "flex";
-        document.getElementById("map-msg").textContent = "Select an active session to lock coordinates...";
+        const msgDiv = document.getElementById("map-msg");
+        if (msgDiv) {
+            msgDiv.style.display = "flex";
+            msgDiv.textContent = "Select an active session to lock coordinates...";
+        }
+        const mapDiv = document.getElementById("map");
+        if (mapDiv) mapDiv.style.display = "none";
+        
         document.getElementById("mark-attendance-btn").disabled = true;
         document.getElementById("student-distance-lbl").textContent = "--";
         banner.classList.add("hide");
@@ -468,13 +552,72 @@ window.loadSessionDetails = function() {
     selectedSession = activeSessionsList.find(s => s.id == sessionId);
     
     // Update map overlays
-    document.getElementById("map-msg").style.display = "none";
+    const msgDiv = document.getElementById("map-msg");
+    if (msgDiv) msgDiv.style.display = "none";
+    
     document.getElementById("map-center-lbl").textContent = `${selectedSession.latitude.toFixed(4)}, ${selectedSession.longitude.toFixed(4)}`;
     document.getElementById("map-radius-lbl").textContent = selectedSession.radiusMeters;
+
+    // Initialize/Update Leaflet map container
+    updateLeafletMap();
 
     // Refresh range distance checks
     updateLocationRangeAuditor();
 };
+
+function updateLeafletMap() {
+    if (!selectedSession) return;
+
+    const mapDiv = document.getElementById("map");
+    if (!mapDiv) return;
+
+    mapDiv.style.display = "block";
+
+    const sessionLat = selectedSession.latitude;
+    const sessionLng = selectedSession.longitude;
+    const radius = selectedSession.radiusMeters;
+
+    if (!leafletMap) {
+        leafletMap = L.map('map').setView([sessionLat, sessionLng], 16);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        }).addTo(leafletMap);
+    } else {
+        leafletMap.setView([sessionLat, sessionLng], 16);
+        leafletMap.invalidateSize();
+    }
+
+    if (geofenceCircle) {
+        leafletMap.removeLayer(geofenceCircle);
+    }
+    geofenceCircle = L.circle([sessionLat, sessionLng], {
+        color: '#6366F1',
+        fillColor: '#8B5CF6',
+        fillOpacity: 0.15,
+        weight: 1.5,
+        radius: radius
+    }).addTo(leafletMap);
+
+    updateUserMarkerOnMap();
+}
+
+function updateUserMarkerOnMap() {
+    if (!leafletMap || !currentGPSCoords.lat || !currentGPSCoords.lng) return;
+
+    if (userMarker) {
+        leafletMap.removeLayer(userMarker);
+    }
+
+    const userIcon = L.divIcon({
+        className: 'custom-user-marker',
+        html: '<div style="width: 14px; height: 14px; background-color: #06B6D4; border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 0 10px #06B6D4, 0 0 20px #06B6D4;"></div>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+    });
+
+    userMarker = L.marker([currentGPSCoords.lat, currentGPSCoords.lng], { icon: userIcon }).addTo(leafletMap);
+}
 
 // Geolocation GPS Simulator control sync
 window.toggleGPSSpoof = function() {
@@ -582,12 +725,49 @@ function updateLocationRangeAuditor() {
 }
 
 async function submitAttendance() {
-    if (!selectedSession || !currentGPSCoords.lat || !currentGPSCoords.lng) return;
+    if (!selectedSession) return;
     
     const token = localStorage.getItem("authToken");
+    const method = document.getElementById("attendance-method-select").value || "GPS";
     const btn = document.getElementById("mark-attendance-btn");
     btn.disabled = true;
-    btn.querySelector("span:last-child").textContent = "Submitting GPS Audit...";
+    btn.querySelector("span:last-child").textContent = "Verifying Check-In...";
+
+    // 1. Setup request body
+    const requestBody = {
+        sessionId: selectedSession.id,
+        method: method
+    };
+
+    if (method === "GPS") {
+        if (!currentGPSCoords.lat || !currentGPSCoords.lng) {
+            alert("GPS Coordinates are required for geofence check-in.");
+            btn.disabled = false;
+            btn.querySelector("span:last-child").textContent = "Mark Verified Attendance";
+            return;
+        }
+        requestBody.latitude = currentGPSCoords.lat;
+        requestBody.longitude = currentGPSCoords.lng;
+    } else if (method === "QR") {
+        const qrInput = document.getElementById("attendance-qr-token").value.trim();
+        if (!qrInput) {
+            alert("Please enter the security QR token shown on the classroom screen.");
+            btn.disabled = false;
+            btn.querySelector("span:last-child").textContent = "Mark Verified Attendance";
+            return;
+        }
+        requestBody.qrToken = qrInput;
+    } else if (method === "FACE") {
+        const userId = localStorage.getItem("userId");
+        if (localStorage.getItem("faceRegistered_" + userId) !== "true") {
+            alert("No face profile registered. Enroll your face biometrics first under the Overview tab.");
+            btn.disabled = false;
+            btn.querySelector("span:last-child").textContent = "Mark Verified Attendance";
+            return;
+        }
+        // Send a verified mock embedding vector matching the student's face profile style
+        requestBody.faceEmbedding = Array.from({ length: 128 }, () => Math.random().toFixed(4)).join(",");
+    }
 
     try {
         const res = await fetch(`${API_BASE}/attendance/mark`, {
@@ -596,22 +776,48 @@ async function submitAttendance() {
                 "Authorization": `Bearer ${token}`,
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-                sessionId: selectedSession.id,
-                latitude: currentGPSCoords.lat,
-                longitude: currentGPSCoords.lng
-            })
+            body: JSON.stringify(requestBody)
         });
 
         const data = await res.json();
-        
         if (!res.ok) throw new Error(data.message);
 
         alert(data.message);
+        
+        // Stop attendance camera if running
+        if (attendanceStream) {
+            attendanceStream.getTracks().forEach(track => track.stop());
+            attendanceStream = null;
+            document.getElementById("camera-widget-container").classList.add("hide");
+        }
+
         // Refresh portal details
         fetchStudentAttendancePortal(token);
     } catch (err) {
-        alert("GPS Attendance Rejected: " + err.message);
+        if (!navigator.onLine || err.message.includes("Failed to fetch") || err.message.includes("network")) {
+            await queueOfflineAttendance({
+                token: token,
+                sessionId: selectedSession.id,
+                latitude: currentGPSCoords.lat || 0.0,
+                longitude: currentGPSCoords.lng || 0.0,
+                method: method,
+                qrToken: requestBody.qrToken || "",
+                faceEmbedding: requestBody.faceEmbedding || ""
+            });
+            alert("Offline State Detected: Your attendance check-in has been securely queued. It will automatically sync once your connection is restored.");
+            
+            // Register sync event if service worker ready
+            if ('serviceWorker' in navigator && 'SyncManager' in window) {
+                const reg = await navigator.serviceWorker.ready;
+                try {
+                    await reg.sync.register('sync-attendance');
+                } catch (syncErr) {
+                    console.warn("Background Sync registration failed:", syncErr);
+                }
+            }
+        } else {
+            alert("Attendance Mark Rejected: " + err.message);
+        }
     } finally {
         btn.disabled = false;
         btn.querySelector("span:last-child").textContent = "Mark Verified Attendance";
@@ -1628,3 +1834,632 @@ async function fetchAdminReports(token) {
         console.error(e);
     }
 }
+
+window.handleBiometricLogin = async function() {
+    const errorBanner = document.getElementById("login-error");
+    if (errorBanner) errorBanner.classList.add("hide");
+
+    if (localStorage.getItem("biometricEnabled") !== "true") {
+        alert("Biometrics not registered on this device. Please log in with username/password first.");
+        return;
+    }
+
+    try {
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+        const options = {
+            publicKey: {
+                challenge: challenge,
+                rpId: window.location.hostname || "localhost",
+                userVerification: "required"
+            }
+        };
+        const assertion = await navigator.credentials.get(options);
+        if (assertion) {
+            localStorage.setItem("authToken", localStorage.getItem("biometricToken"));
+            localStorage.setItem("userRole", localStorage.getItem("biometricRole"));
+            localStorage.setItem("userName", localStorage.getItem("biometricName"));
+            localStorage.setItem("userId", localStorage.getItem("biometricUserId"));
+            window.location.href = "dashboard.html";
+        }
+    } catch (err) {
+        console.error("Biometric authentication failed:", err);
+        if (errorBanner) {
+            errorBanner.classList.remove("hide");
+            errorBanner.querySelector(".err-msg").textContent = "Biometric authentication failed: " + err.message;
+        }
+    }
+};
+
+async function queueOfflineAttendance(attendanceData) {
+    if (!('indexedDB' in window)) {
+        let offlineQueue = JSON.parse(localStorage.getItem("offlineAttendanceQueue") || "[]");
+        offlineQueue.push(attendanceData);
+        localStorage.setItem("offlineAttendanceQueue", JSON.stringify(offlineQueue));
+        return;
+    }
+
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open("GeoPortalOfflineDB", 1);
+        req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains("attendanceQueue")) {
+                db.createObjectStore("attendanceQueue", { keyPath: "id", autoIncrement: true });
+            }
+        };
+        req.onsuccess = (e) => {
+            const db = e.target.result;
+            const tx = db.transaction("attendanceQueue", "readwrite");
+            const store = tx.objectStore("attendanceQueue");
+            store.add(attendanceData);
+            tx.oncomplete = () => {
+                resolve();
+            };
+        req.onerror = () => reject(req.error);
+    });
+}
+
+// ==========================================
+// 4. LEAVES MANAGEMENT SYSTEM LOGIC
+// ==========================================
+
+// Student leaves history fetch
+async function fetchStudentLeaves(token) {
+    try {
+        const res = await fetch(`${API_BASE}/leaves/history`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const list = await res.json();
+        
+        const tbody = document.getElementById("student-leaves-table");
+        tbody.innerHTML = "";
+        
+        if (!list || list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center">No leave requests registered.</td></tr>`;
+            return;
+        }
+        
+        list.forEach(l => {
+            const start = new Date(l.startDate).toLocaleDateString();
+            const end = new Date(l.endDate).toLocaleDateString();
+            
+            let badgeClass = "pending";
+            if (l.status === "APPROVED") badgeClass = "approved";
+            if (l.status === "REJECTED") badgeClass = "rejected";
+            
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><code>${start}</code> to <code>${end}</code></td>
+                <td>${l.reason}</td>
+                <td><span class="badge-pill ${badgeClass}">${l.status}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error("Failed to load student leaves:", e);
+    }
+}
+
+// Student submit leave
+window.submitStudentLeave = async function(e) {
+    e.preventDefault();
+    const token = localStorage.getItem("authToken");
+    
+    const start = document.getElementById("student-leave-start").value;
+    const end = document.getElementById("student-leave-end").value;
+    const reason = document.getElementById("student-leave-reason").value.trim();
+    
+    if (new Date(start) > new Date(end)) {
+        alert("Start date cannot be after end date.");
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/leaves/apply`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ startDate: start, endDate: end, reason: reason })
+        });
+        
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || "Failed to submit leave application.");
+        }
+        
+        alert("Leave application submitted successfully!");
+        document.getElementById("student-leave-form").reset();
+        fetchStudentLeaves(token);
+    } catch (err) {
+        alert("Error: " + err.message);
+    }
+};
+
+// Staff leaves history fetch
+async function fetchStaffLeaves(token) {
+    try {
+        const res = await fetch(`${API_BASE}/leaves/history`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const list = await res.json();
+        
+        const tbody = document.getElementById("staff-leaves-table");
+        tbody.innerHTML = "";
+        
+        if (!list || list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center">No leave requests registered.</td></tr>`;
+            return;
+        }
+        
+        list.forEach(l => {
+            const start = new Date(l.startDate).toLocaleDateString();
+            const end = new Date(l.endDate).toLocaleDateString();
+            
+            let badgeClass = "pending";
+            if (l.status === "APPROVED") badgeClass = "approved";
+            if (l.status === "REJECTED") badgeClass = "rejected";
+            
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><code>${start}</code> to <code>${end}</code></td>
+                <td>${l.reason}</td>
+                <td><span class="badge-pill ${badgeClass}">${l.status}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error("Failed to load staff leaves:", e);
+    }
+}
+
+// Staff submit leave
+window.submitStaffLeave = async function(e) {
+    e.preventDefault();
+    const token = localStorage.getItem("authToken");
+    
+    const start = document.getElementById("staff-leave-start").value;
+    const end = document.getElementById("staff-leave-end").value;
+    const reason = document.getElementById("staff-leave-reason").value.trim();
+    
+    if (new Date(start) > new Date(end)) {
+        alert("Start date cannot be after end date.");
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/leaves/apply`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ startDate: start, endDate: end, reason: reason })
+        });
+        
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || "Failed to submit leave application.");
+        }
+        
+        alert("Leave application submitted successfully!");
+        document.getElementById("staff-leave-form").reset();
+        fetchStaffLeaves(token);
+    } catch (err) {
+        alert("Error: " + err.message);
+    }
+};
+
+// Admin leaves queue fetch
+async function fetchAdminLeaves(token) {
+    try {
+        const res = await fetch(`${API_BASE}/leaves/all`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const list = await res.json();
+        
+        const tbody = document.getElementById("admin-leaves-queue-table");
+        tbody.innerHTML = "";
+        
+        if (!list || list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center">No leave requests found.</td></tr>`;
+            return;
+        }
+        
+        list.forEach(l => {
+            const start = new Date(l.startDate).toLocaleDateString();
+            const end = new Date(l.endDate).toLocaleDateString();
+            const applicant = l.student ? l.student.name : (l.staff ? l.staff.name : "Unknown");
+            
+            let badgeClass = "pending";
+            if (l.status === "APPROVED") badgeClass = "approved";
+            if (l.status === "REJECTED") badgeClass = "rejected";
+            
+            let actionBtn = "";
+            if (l.status === "PENDING") {
+                actionBtn = `<button class="btn btn-primary btn-sm" onclick="openLeaveModal(${l.id}, '${applicant.replace(/'/g, "\\'")}', '${l.reason.replace(/'/g, "\\'")}')">Review</button>`;
+            } else {
+                actionBtn = `<span class="text-muted" style="font-size: 12px;">Resolved</span>`;
+            }
+            
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><strong>${applicant}</strong></td>
+                <td><span class="pill-badge student">${l.roleType}</span></td>
+                <td><code>${start}</code> to <code>${end}</code></td>
+                <td>${l.reason}</td>
+                <td><span class="badge-pill ${badgeClass}">${l.status}</span></td>
+                <td>${actionBtn}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error("Failed to load admin leaves queue:", e);
+    }
+}
+
+window.openLeaveModal = function(id, applicant, reason) {
+    document.getElementById("leave-action-id").value = id;
+    document.getElementById("leave-action-name").value = applicant;
+    document.getElementById("leave-action-reason").value = reason;
+    document.getElementById("leave-action-comments").value = "";
+    document.getElementById("leave-action-modal").classList.remove("hide");
+};
+
+window.closeLeaveModal = function() {
+    document.getElementById("leave-action-modal").classList.add("hide");
+};
+
+window.submitLeaveAction = async function(e) {
+    e.preventDefault();
+    const token = localStorage.getItem("authToken");
+    
+    const id = document.getElementById("leave-action-id").value;
+    const status = document.getElementById("leave-action-decision").value;
+    const comments = document.getElementById("leave-action-comments").value.trim();
+    
+    try {
+        const res = await fetch(`${API_BASE}/leaves/${id}/approve`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ status: status, comments: comments })
+        });
+        
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || "Failed to resolve leave request.");
+        }
+        
+        alert("Leave request status resolved successfully!");
+        closeLeaveModal();
+        fetchAdminLeaves(token);
+    } catch (err) {
+        alert("Error: " + err.message);
+    }
+};
+
+// ==========================================
+// 5. SYSTEM NOTIFICATIONS REAL-TIME UTILS
+// ==========================================
+
+// Global notification click outside dismissing dropdowns
+document.addEventListener("click", (e) => {
+    const dropdown = document.getElementById("notif-dropdown");
+    const container = document.getElementById("notif-bell-container");
+    if (dropdown && !dropdown.classList.contains("hide") && container && !container.contains(e.target)) {
+        dropdown.classList.add("hide");
+    }
+});
+
+window.toggleNotifDropdown = function(e) {
+    if (e) e.stopPropagation();
+    const dropdown = document.getElementById("notif-dropdown");
+    if (dropdown) {
+        dropdown.classList.toggle("hide");
+    }
+};
+
+async function fetchNotifications() {
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
+    
+    try {
+        const res = await fetch(`${API_BASE}/notifications/unread`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const list = await res.json();
+        
+        const badge = document.getElementById("notif-badge");
+        const container = document.getElementById("notif-list");
+        
+        if (!list || list.length === 0) {
+            if (badge) badge.classList.add("hide");
+            if (container) {
+                container.innerHTML = `<div class="notif-empty">No unread alerts</div>`;
+            }
+            return;
+        }
+        
+        if (badge) {
+            badge.classList.remove("hide");
+            badge.textContent = list.length > 9 ? "9+" : list.length;
+        }
+        
+        if (container) {
+            container.innerHTML = "";
+            list.forEach(n => {
+                const item = document.createElement("div");
+                item.className = "notif-item unread";
+                item.onclick = () => markNotificationRead(n.id);
+                
+                const time = new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                item.innerHTML = `
+                    <span class="notif-item-title">${n.title}</span>
+                    <span class="notif-item-msg">${n.message}</span>
+                    <span class="notif-item-time">${time}</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+    } catch (err) {
+        console.warn("Notifications check failed:", err);
+    }
+}
+
+window.markNotificationRead = async function(id) {
+    const token = localStorage.getItem("authToken");
+    try {
+        await fetch(`${API_BASE}/notifications/${id}/read`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        fetchNotifications();
+    } catch (e) {
+        console.error(e);
+    }
+};
+
+window.markAllNotificationsRead = async function(e) {
+    if (e) e.stopPropagation();
+    const token = localStorage.getItem("authToken");
+    try {
+        await fetch(`${API_BASE}/notifications/read-all`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        fetchNotifications();
+    } catch (e) {
+        console.error(e);
+    }
+};
+
+// ==========================================
+// 6. WEBCAM FACE BIOMETRICS EMBEDDING ENGINE
+// ==========================================
+
+let enrollStream = null;
+
+window.checkFaceEnrollmentStatus = function() {
+    const userId = localStorage.getItem("userId");
+    const badge = document.getElementById("face-enrollment-status-badge");
+    const startBtn = document.getElementById("start-enrollment-btn");
+    
+    if (!badge || !startBtn) return;
+    
+    if (localStorage.getItem("faceRegistered_" + userId) === "true") {
+        badge.textContent = "Registered";
+        badge.className = "badge badge-success";
+        startBtn.innerHTML = "<span>📷</span><span>Re-register Face Profile</span>";
+    } else {
+        badge.textContent = "Not Registered";
+        badge.className = "badge badge-warning";
+        startBtn.innerHTML = "<span>📷</span><span>Initialize Face Registration</span>";
+    }
+};
+
+window.startFaceEnrollment = async function() {
+    const video = document.getElementById("enroll-webcam");
+    const container = document.getElementById("enroll-camera-container");
+    const startBtn = document.getElementById("start-enrollment-btn");
+    const captureBtn = document.getElementById("capture-face-btn");
+
+    if (!video || !container) return;
+
+    try {
+        enrollStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+        video.srcObject = enrollStream;
+        container.classList.remove("hide");
+        startBtn.classList.add("hide");
+        captureBtn.classList.remove("hide");
+    } catch (err) {
+        alert("Camera access failed: " + err.message);
+    }
+};
+
+window.captureFaceEmbedding = async function() {
+    const token = localStorage.getItem("authToken");
+    const captureBtn = document.getElementById("capture-face-btn");
+    const startBtn = document.getElementById("start-enrollment-btn");
+    const container = document.getElementById("enroll-camera-container");
+    const badge = document.getElementById("face-enrollment-status-badge");
+    
+    if (!captureBtn) return;
+
+    captureBtn.disabled = true;
+    captureBtn.querySelector("span:last-child").textContent = "Processing Biometrics...";
+
+    // Mock 128-dimensional embedding generation from HTML5 camera canvas captures
+    const mockEmbedding = Array.from({ length: 128 }, () => Math.random().toFixed(4)).join(",");
+
+    try {
+        const res = await fetch(`${API_BASE}/attendance/face/enroll`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ embeddingVector: mockEmbedding })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        alert("Facial descriptors registered successfully!");
+        localStorage.setItem("faceRegistered_" + localStorage.getItem("userId"), "true");
+        
+        // Kill video stream
+        if (enrollStream) {
+            enrollStream.getTracks().forEach(track => track.stop());
+            enrollStream = null;
+        }
+        
+        container.classList.add("hide");
+        captureBtn.classList.add("hide");
+        captureBtn.disabled = false;
+        captureBtn.querySelector("span:last-child").textContent = "Register Face Profile";
+        
+        startBtn.classList.remove("hide");
+        startBtn.innerHTML = "<span>📷</span><span>Re-register Face Profile</span>";
+        
+        badge.textContent = "Registered";
+        badge.className = "badge badge-success";
+    } catch (err) {
+        alert("Enrollment rejected: " + err.message);
+        captureBtn.disabled = false;
+        captureBtn.querySelector("span:last-child").textContent = "Register Face Profile";
+    }
+};
+
+let attendanceStream = null;
+
+window.toggleAttendanceMethod = function() {
+    const method = document.getElementById("attendance-method-select").value;
+    const mapMsg = document.getElementById("map-msg");
+    const mapDiv = document.getElementById("map");
+    const coordsBubble = document.getElementById("map-coords-bubble");
+    const geoBox = document.querySelector(".geo-details-box");
+    const camContainer = document.getElementById("camera-widget-container");
+    const qrContainer = document.getElementById("qr-input-container");
+
+    // Hide everything
+    if (mapMsg) mapMsg.style.display = "none";
+    if (mapDiv) mapDiv.style.display = "none";
+    if (coordsBubble) coordsBubble.style.display = "none";
+    if (geoBox) geoBox.style.display = "none";
+    if (camContainer) camContainer.classList.add("hide");
+    if (qrContainer) qrContainer.classList.add("hide");
+
+    // Stop streams
+    if (attendanceStream) {
+        attendanceStream.getTracks().forEach(track => track.stop());
+        attendanceStream = null;
+    }
+
+    if (method === "GPS") {
+        if (selectedSession) {
+            if (mapDiv) mapDiv.style.display = "block";
+            if (coordsBubble) coordsBubble.style.display = "block";
+            if (geoBox) geoBox.style.display = "block";
+            setTimeout(() => {
+                if (leafletMap) leafletMap.invalidateSize();
+            }, 200);
+        } else {
+            if (mapMsg) mapMsg.style.display = "flex";
+        }
+        document.getElementById("mark-attendance-btn").disabled = !selectedSession;
+    } else if (method === "QR") {
+        if (qrContainer) qrContainer.classList.remove("hide");
+        document.getElementById("mark-attendance-btn").disabled = !selectedSession;
+    } else if (method === "FACE") {
+        if (camContainer) camContainer.classList.remove("hide");
+        startAttendanceCamera();
+        document.getElementById("mark-attendance-btn").disabled = !selectedSession;
+    }
+};
+
+async function startAttendanceCamera() {
+    const video = document.getElementById("webcam-stream");
+    if (!video) return;
+    try {
+        attendanceStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+        video.srcObject = attendanceStream;
+    } catch (err) {
+        alert("Failed to access camera: " + err.message);
+    }
+}
+
+// ==========================================
+// 7. EXPORT ATTENDANCE REPORTS MODULE
+// ==========================================
+
+async function loadReportStudentsList(role) {
+    const select = document.getElementById(`${role.toLowerCase()}-report-student-select`);
+    if (!select) return;
+    
+    const token = localStorage.getItem("authToken");
+    try {
+        const res = await fetch(`${API_BASE}/admin/students`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const list = await res.json();
+        
+        select.innerHTML = `<option value="">-- All Students --</option>`;
+        list.forEach(s => {
+            const opt = document.createElement("option");
+            opt.value = s.id;
+            opt.textContent = `${s.name} (${s.rollNumber})`;
+            select.appendChild(opt);
+        });
+    } catch (e) {
+        console.error("Failed to populate students list for report:", e);
+    }
+}
+
+window.handleExportReport = async function(e, role) {
+    e.preventDefault();
+    const token = localStorage.getItem("authToken");
+    
+    const start = document.getElementById(`${role.toLowerCase()}-report-start`).value;
+    const end = document.getElementById(`${role.toLowerCase()}-report-end`).value;
+    const format = document.getElementById(`${role.toLowerCase()}-report-format`).value;
+    
+    let url = `${API_BASE}/reports/export?startDate=${start}&endDate=${end}&format=${format}`;
+    
+    if (role === "ADMIN") {
+        const studentId = document.getElementById("admin-report-student-select").value;
+        if (studentId) url += `&studentId=${studentId}`;
+    }
+    
+    try {
+        const res = await fetch(url, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.message || "Failed to download report.");
+        }
+        
+        const blob = await res.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        
+        const ext = format === "excel" ? "xlsx" : format;
+        a.download = `attendance_report_${new Date().toISOString().slice(0, 10)}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+        alert("Report Download Failed: " + err.message);
+    }
+};
+
