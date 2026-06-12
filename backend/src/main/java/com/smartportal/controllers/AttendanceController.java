@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -97,7 +98,8 @@ public class AttendanceController {
     @PostMapping("/mark")
     public ResponseEntity<?> markAttendance(
             @RequestHeader("Authorization") String token,
-            @RequestBody Map<String, Object> request) {
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest servletRequest) {
 
         Optional<AuthService.UserSession> sessionOpt = authService.validateToken(token);
         if (sessionOpt.isEmpty() || !"STUDENT".equalsIgnoreCase(sessionOpt.get().getRole())) {
@@ -105,12 +107,16 @@ public class AttendanceController {
         }
 
         try {
-            Long sessionId = Long.valueOf(request.get("sessionId").toString());
-            Double latitude = Double.valueOf(request.get("latitude").toString());
-            Double longitude = Double.valueOf(request.get("longitude").toString());
+            Long sessionId = request.containsKey("sessionId") && request.get("sessionId") != null ? Long.valueOf(request.get("sessionId").toString()) : null;
+            Double latitude = request.containsKey("latitude") && request.get("latitude") != null ? Double.valueOf(request.get("latitude").toString()) : null;
+            Double longitude = request.containsKey("longitude") && request.get("longitude") != null ? Double.valueOf(request.get("longitude").toString()) : null;
+            String method = request.containsKey("method") ? request.get("method").toString() : "GPS";
+            String qrToken = request.containsKey("qrToken") ? request.get("qrToken").toString() : null;
+            String faceEmbedding = request.containsKey("faceEmbedding") ? request.get("faceEmbedding").toString() : null;
+            String ipAddress = getClientIp(servletRequest);
 
             AttendanceRecord record = attendanceService.markAttendance(
-                    sessionId, sessionOpt.get().getId(), latitude, longitude);
+                    sessionId, sessionOpt.get().getId(), latitude, longitude, method, qrToken, faceEmbedding, ipAddress);
             
             return ResponseEntity.ok(Map.of(
                     "message", "Attendance marked successfully! Status: " + record.getStatus(),
@@ -119,6 +125,36 @@ public class AttendanceController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
         }
+    }
+
+    @PostMapping("/face/enroll")
+    public ResponseEntity<?> enrollFace(
+            @RequestHeader("Authorization") String token,
+            @RequestBody Map<String, String> request) {
+        
+        Optional<AuthService.UserSession> sessionOpt = authService.validateToken(token);
+        if (sessionOpt.isEmpty() || !"STUDENT".equalsIgnoreCase(sessionOpt.get().getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized student access."));
+        }
+
+        try {
+            String embedding = request.get("embeddingVector");
+            if (embedding == null || embedding.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "embeddingVector is required"));
+            }
+            FaceProfile profile = attendanceService.registerFace(sessionOpt.get().getId(), embedding);
+            return ResponseEntity.ok(profile);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
     }
 
     // 4. Student views their own history

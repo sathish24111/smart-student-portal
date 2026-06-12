@@ -14,4 +14,8 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
     List<AttendanceRecord> findBySessionSubjectIdAndStudentId(Long subjectId, Long studentId);
     long countByStudentIdAndStatus(Long studentId, String status);
     long countByStudentId(Long studentId);
+    
+    List<com.smartportal.models.AttendanceRecord> findByMarkedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
+    List<com.smartportal.models.AttendanceRecord> findByStudentIdAndMarkedAtBetween(Long studentId, java.time.LocalDateTime start, java.time.LocalDateTime end);
+    List<com.smartportal.models.AttendanceRecord> findBySessionStaffIdAndMarkedAtBetween(Long staffId, java.time.LocalDateTime start, java.time.LocalDateTime end);
 }

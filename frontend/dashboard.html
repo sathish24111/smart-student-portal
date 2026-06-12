@@ -50,6 +50,9 @@
                     <li onclick="switchTab('student-timetable')">
                         <span class="menu-icon">📅</span><span>Timetable</span>
                     </li>
+                    <li onclick="switchTab('student-leaves')">
+                        <span class="menu-icon">📅</span><span>Leave Requests</span>
+                    </li>
                     <li onclick="switchTab('student-alerts')">
                         <span class="menu-icon">🚨</span><span>Inbox Alerts</span>
                     </li>
@@ -72,6 +75,9 @@
                     <li onclick="switchTab('staff-assignments-manage')">
                         <span class="menu-icon">📁</span><span>Upload Task</span>
                     </li>
+                    <li onclick="switchTab('staff-leaves')">
+                        <span class="menu-icon">📅</span><span>Leave Requests</span>
+                    </li>
                 </ul>
 
                 <!-- Admin Menu -->
@@ -90,6 +96,9 @@
                     </li>
                     <li onclick="switchTab('admin-reports')">
                         <span class="menu-icon">📈</span><span>Global Audit</span>
+                    </li>
+                    <li onclick="switchTab('admin-leaves')">
+                        <span class="menu-icon">⚖️</span><span>Review Leaves</span>
                     </li>
                 </ul>
             </nav>
@@ -113,10 +122,21 @@
                     </div>
                 </div>
                 <div class="topbar-right" style="display: flex; align-items: center; gap: 20px;">
-                    <!-- Notification Bell -->
-                    <div class="bell-container" style="position: relative; cursor: pointer; font-size: 18px; display: flex; align-items: center;">
+                    <!-- Notification Bell with Dropdown -->
+                    <div class="bell-container" id="notif-bell-container" style="position: relative; cursor: pointer; font-size: 18px; display: flex; align-items: center;" onclick="toggleNotifDropdown(event)">
                         <span>🔔</span>
-                        <span class="bell-dot" style="position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background-color: var(--danger); border-radius: 50%; border: 1.5px solid var(--card-bg);"></span>
+                        <span class="bell-dot hide" id="notif-badge" style="position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background-color: var(--danger); border-radius: 50%; border: 1.5px solid var(--card-bg);"></span>
+                        
+                        <!-- Notifications Dropdown Overlay -->
+                        <div class="notif-dropdown hide" id="notif-dropdown" onclick="event.stopPropagation()">
+                            <div class="notif-header">
+                                <h4>System Alerts</h4>
+                                <button class="btn-link-sm" onclick="markAllNotificationsRead(event)">Mark all read</button>
+                            </div>
+                            <div class="notif-list" id="notif-list">
+                                <div class="notif-empty">No unread notifications</div>
+                            </div>
+                        </div>
                     </div>
                     <!-- Help link -->
                     <a href="#" style="color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 600;" onclick="alert('Need help? Feel free to browse details in the system audit logs!')">Need help?</a>
@@ -218,6 +238,33 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Face Enrollment Card -->
+                <div class="card mt-4 border-primary bg-glass">
+                    <div class="card-header bg-primary-light" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4 style="display: flex; align-items: center; gap: 8px; margin: 0;">👤 Face Biometrics Registration</h4>
+                        <span class="badge badge-warning" id="face-enrollment-status-badge">Not Registered</span>
+                    </div>
+                    <div class="card-body text-center py-4">
+                        <p class="text-muted mb-3">Register your face biometrics profile embedding vector to verify class check-ins.</p>
+                        
+                        <div id="enroll-camera-container" class="hide mb-3 camera-widget-container mx-auto" style="max-width: 400px;">
+                            <video id="enroll-webcam" autoplay playsinline class="camera-stream"></video>
+                            <div class="camera-overlay">
+                                <div class="camera-overlay-circle"></div>
+                            </div>
+                        </div>
+
+                        <div class="text-center" style="display: flex; justify-content: center; gap: 12px;">
+                            <button class="btn btn-primary" id="start-enrollment-btn" onclick="startFaceEnrollment()">
+                                <span>📷</span><span>Initialize Face Registration</span>
+                            </button>
+                            <button class="btn btn-success hide" id="capture-face-btn" onclick="captureFaceEmbedding()">
+                                <span>🔒</span><span>Register Face Profile</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- Tab: Student Attendance Portal (MAIN GEOLOCATION FEATURE) -->
@@ -233,6 +280,33 @@
                                 <select id="active-session-select" class="form-control" onchange="loadSessionDetails()">
                                     <option value="">-- No Active Lectures Found --</option>
                                 </select>
+                            </div>
+
+                            <div class="form-group mt-3">
+                                <label for="attendance-method-select">Verification Method</label>
+                                <select id="attendance-method-select" class="form-control" onchange="toggleAttendanceMethod()">
+                                    <option value="GPS">GPS Geofence Verification</option>
+                                    <option value="QR">Scan QR Security Token</option>
+                                    <option value="FACE">Facial Biometrics Check-In</option>
+                                </select>
+                            </div>
+
+                            <!-- Camera Widget for Face Biometrics Check-In -->
+                            <div id="camera-widget-container" class="hide mt-3 camera-widget-container">
+                                <video id="webcam-stream" autoplay playsinline class="camera-stream"></video>
+                                <div class="camera-overlay" id="camera-overlay-box">
+                                    <div class="camera-overlay-circle"></div>
+                                    <span style="position: absolute; bottom: 16px; font-weight: 600;">Position face inside the frame</span>
+                                </div>
+                                <canvas id="capture-canvas" class="hide"></canvas>
+                            </div>
+
+                            <!-- QR Code Manual Input fallback -->
+                            <div id="qr-input-container" class="hide mt-3">
+                                <div class="form-group">
+                                    <label for="attendance-qr-token">Enter Broadcast QR Security Token</label>
+                                    <input type="text" id="attendance-qr-token" class="form-control" placeholder="e.g. ATT_QR_1779...">
+                                </div>
                             </div>
 
                             <!-- Real Leaflet Map Container -->
@@ -416,6 +490,60 @@
                     </div>
                     <div class="card-body" id="student-alerts-full-list">
                         <div class="inbox-item-empty">No emails received.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Student Leave Application -->
+            <section id="tab-student-leaves" class="tab-pane hide">
+                <div class="layout-grid-3-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>📅 Submit Leave Request</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="student-leave-form" onsubmit="submitStudentLeave(event)">
+                                <div class="leave-grid">
+                                    <div class="form-group">
+                                        <label for="student-leave-start">Start Date</label>
+                                        <input type="date" id="student-leave-start" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="student-leave-end">End Date</label>
+                                        <input type="date" id="student-leave-end" class="form-control" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="student-leave-reason">Reason for Leave</label>
+                                    <textarea id="student-leave-reason" class="form-control" rows="4" placeholder="Describe the reason for your leave request..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-3">
+                                    <span>📤</span><span>Submit Application</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>📋 Leave Request History</h4>
+                        </div>
+                        <div class="card-body table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Duration</th>
+                                        <th>Reason</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="student-leaves-table">
+                                    <tr>
+                                        <td colspan="3" class="text-center">No leave requests registered.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -652,6 +780,36 @@
 
             <!-- Tab: Staff Reports & Audits -->
             <section id="tab-staff-reports" class="tab-pane hide">
+                <!-- Export Panel -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>📥 Export Attendance Report</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="staff-report-export-form" onsubmit="handleExportReport(event, 'STAFF')" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+                                <label for="staff-report-start">Start Date</label>
+                                <input type="date" id="staff-report-start" class="form-control" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+                                <label for="staff-report-end">End Date</label>
+                                <input type="date" id="staff-report-end" class="form-control" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+                                <label for="staff-report-format">Format</label>
+                                <select id="staff-report-format" class="form-control" required>
+                                    <option value="csv">CSV (Comma Separated)</option>
+                                    <option value="excel">Excel (.xlsx)</option>
+                                    <option value="pdf">PDF (.pdf)</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <span>📥</span><span>Download Report</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
                 <div class="card">
                     <div class="card-header">
                         <h4>📋 Classroom Attendance Logs Report</h4>
@@ -738,6 +896,60 @@
                                 <tbody id="staff-posted-assignments-table">
                                     <tr>
                                         <td colspan="4" class="text-center">No assignments posted yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Staff Leave Application -->
+            <section id="tab-staff-leaves" class="tab-pane hide">
+                <div class="layout-grid-3-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>📅 Submit Leave Request</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="staff-leave-form" onsubmit="submitStaffLeave(event)">
+                                <div class="leave-grid">
+                                    <div class="form-group">
+                                        <label for="staff-leave-start">Start Date</label>
+                                        <input type="date" id="staff-leave-start" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="staff-leave-end">End Date</label>
+                                        <input type="date" id="staff-leave-end" class="form-control" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="staff-leave-reason">Reason for Leave</label>
+                                    <textarea id="staff-leave-reason" class="form-control" rows="4" placeholder="Describe the reason for your leave request..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-3">
+                                    <span>📤</span><span>Submit Application</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>📋 Leave Request History</h4>
+                        </div>
+                        <div class="card-body table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Duration</th>
+                                        <th>Reason</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staff-leaves-table">
+                                    <tr>
+                                        <td colspan="3" class="text-center">No leave requests registered.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1144,6 +1356,42 @@
 
             <!-- Tab: Admin Reports & Global Audit -->
             <section id="tab-admin-reports" class="tab-pane hide">
+                <!-- Export Panel -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>📥 Export Attendance Report</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="admin-report-export-form" onsubmit="handleExportReport(event, 'ADMIN')" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+                                <label for="admin-report-start">Start Date</label>
+                                <input type="date" id="admin-report-start" class="form-control" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+                                <label for="admin-report-end">End Date</label>
+                                <input type="date" id="admin-report-end" class="form-control" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                                <label for="admin-report-student-select">Student Filter (Optional)</label>
+                                <select id="admin-report-student-select" class="form-control">
+                                    <option value="">-- All Students --</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+                                <label for="admin-report-format">Format</label>
+                                <select id="admin-report-format" class="form-control" required>
+                                    <option value="csv">CSV (Comma Separated)</option>
+                                    <option value="excel">Excel (.xlsx)</option>
+                                    <option value="pdf">PDF (.pdf)</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <span>📥</span><span>Download Report</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
                 <div class="card">
                     <div class="card-header">
                         <h4>📈 System-Wide Attendance Audit Logs</h4>
@@ -1169,7 +1417,71 @@
                         </table>
                     </div>
                 </div>
+            <!-- Tab: Admin Leaves Approval -->
+            <section id="tab-admin-leaves" class="tab-pane hide">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>⚖️ Pending Leave Applications Queue</h4>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Applicant</th>
+                                    <th>Role</th>
+                                    <th>Duration</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-leaves-queue-table">
+                                <tr>
+                                    <td colspan="6" class="text-center">No pending leave requests found.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </section>
+
+            <!-- Leave Approval/Rejection Modal -->
+            <div id="leave-action-modal" class="modal hide">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4>Review Leave Application</h4>
+                        <span class="modal-close" onclick="closeLeaveModal()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <form id="leave-action-form" onsubmit="submitLeaveAction(event)">
+                            <input type="hidden" id="leave-action-id">
+                            <div class="form-group">
+                                <label>Applicant Name</label>
+                                <input type="text" id="leave-action-name" class="form-control" disabled style="background-color: var(--border-color); color: var(--text-muted);">
+                            </div>
+                            <div class="form-group">
+                                <label>Reason for Leave</label>
+                                <textarea id="leave-action-reason" class="form-control" rows="3" disabled style="background-color: var(--border-color); color: var(--text-muted);"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="leave-action-decision">Decision</label>
+                                <select id="leave-action-decision" class="form-control" required>
+                                    <option value="APPROVED">Approve Leave</option>
+                                    <option value="REJECTED">Reject Leave</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="leave-action-comments">Resolution Comments</label>
+                                <textarea id="leave-action-comments" class="form-control" rows="3" placeholder="Enter comments or reason for decision..."></textarea>
+                            </div>
+                            <div class="form-actions mt-4 text-right">
+                                <button type="button" class="btn btn-outline" onclick="closeLeaveModal()">Cancel</button>
+                                <button type="submit" class="btn btn-success">Save Decision</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
 
         </main>
     </div>

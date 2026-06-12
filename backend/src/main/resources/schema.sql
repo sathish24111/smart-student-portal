@@ -119,3 +119,56 @@ CREATE TABLE IF NOT EXISTS submissions (
     FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE,
     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 );
+
+-- 11. Leave Requests
+CREATE TABLE IF NOT EXISTS leave_requests (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    role_type VARCHAR(20) NOT NULL, -- STUDENT or STAFF
+    student_id BIGINT,
+    staff_id BIGINT,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    reason TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'PENDING',
+    comments TEXT,
+    approved_by_admin_id BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE,
+    FOREIGN KEY (approved_by_admin_id) REFERENCES admins(id) ON DELETE SET NULL
+);
+
+-- 12. Face Profiles (Student Biometrics)
+CREATE TABLE IF NOT EXISTS face_profiles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id BIGINT NOT NULL UNIQUE,
+    embedding_vector TEXT NOT NULL,
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+);
+
+-- 13. System Notifications
+CREATE TABLE IF NOT EXISTS notifications (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    role_type VARCHAR(20) NOT NULL, -- STUDENT, STAFF, ADMIN
+    student_id BIGINT,
+    staff_id BIGINT,
+    admin_id BIGINT,
+    title VARCHAR(150) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE,
+    FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+);
+
+-- 14. Audit Logs
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    role_type VARCHAR(20) NOT NULL,
+    username VARCHAR(100) NOT NULL,
+    action VARCHAR(255) NOT NULL,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
