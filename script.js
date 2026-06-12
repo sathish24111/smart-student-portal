@@ -1895,6 +1895,8 @@ async function queueOfflineAttendance(attendanceData) {
             tx.oncomplete = () => {
                 resolve();
             };
+            tx.onerror = () => reject(tx.error);
+        };
         req.onerror = () => reject(req.error);
     });
 }
