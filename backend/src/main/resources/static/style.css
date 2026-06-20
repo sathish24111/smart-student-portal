@@ -2009,3 +2009,61 @@ code {
     width: 100%;
 }
 
+/* Collapsible Navigation Drawer for Mobile */
+@media (max-width: 768px) {
+    .mobile-menu-trigger {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        cursor: pointer;
+        font-size: 20px;
+        color: var(--text-color);
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition);
+        z-index: 100;
+    }
+    
+    .mobile-menu-trigger:hover {
+        background: var(--bg-color);
+    }
+    
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px; /* Hidden offscreen by default */
+        width: 280px;
+        height: 100vh;
+        z-index: 1000;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.15);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-right: 1px solid var(--border-color);
+        display: flex !important;
+        flex-direction: column;
+    }
+    
+    .sidebar.open {
+        transform: translateX(280px); /* Slide in from left */
+    }
+    
+    .sidebar-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    
+    .sidebar-overlay.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+

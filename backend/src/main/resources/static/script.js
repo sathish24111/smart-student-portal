@@ -349,6 +349,11 @@ window.switchTab = function(tabId) {
 
     // Trigger specific Tab reload feeds
     reloadTabFeeds(tabId);
+    
+    // Auto-close navigation drawer on mobile screen sizes
+    if (typeof closeMobileSidebar === 'function') {
+        closeMobileSidebar();
+    }
 };
 
 // ==========================================
@@ -3073,4 +3078,23 @@ window.fetchStaffFees = fetchStaffFees;
 window.fetchAdminFees = fetchAdminFees;
 window.loadProfileModalAttendanceHeatmap = loadProfileModalAttendanceHeatmap;
 window.loadProfileModalFeesHistory = loadProfileModalFeesHistory;
+
+// Mobile Collapsible Sidebar Actions
+window.toggleMobileSidebar = function() {
+    const sidebar = document.querySelector(".sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+    if (sidebar && overlay) {
+        sidebar.classList.toggle("open");
+        overlay.classList.toggle("show");
+    }
+};
+
+window.closeMobileSidebar = function() {
+    const sidebar = document.querySelector(".sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+    if (sidebar && overlay) {
+        sidebar.classList.remove("open");
+        overlay.classList.remove("show");
+    }
+};
 

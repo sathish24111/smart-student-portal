@@ -120,12 +120,14 @@
                 </button>
             </div>
         </aside>
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
 
         <!-- Main Content Area -->
         <main class="main-content">
             <!-- Header Topbar -->
             <header class="topbar">
                 <div class="topbar-left" style="display: flex; align-items: center; gap: 16px;">
+                    <button class="mobile-menu-trigger" id="hamburger-menu-btn" style="display: none;" onclick="toggleMobileSidebar()">☰</button>
                     <!-- Rounded Mock Search Bar (Mockup styling) -->
                     <div class="search-container-mock">
                         <span class="search-icon-mock">🔍</span>
