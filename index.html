@@ -7,44 +7,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.4.1">
+    <link rel="stylesheet" href="style.css?v=2.5.0">
 </head>
 <body class="login-body">
     <!-- Theme Toggle Floating Button -->
     <button class="theme-toggle" id="theme-btn" aria-label="Toggle Dark Mode">🌓</button>
 
     <div class="login-wrapper">
-        <!-- Left Panel - Corporate Branding & Features -->
-        <div class="login-visual">
-            <div class="visual-content">
-                <span class="badge">Main Feature</span>
-                <h1>Geolocation Attendance Tracker</h1>
-                <p>Enforcing physical presence inside classrooms through advanced radius-bounded GPS tracking and QR-verified check-ins.</p>
-                
-                <div class="visual-features">
-                    <div class="v-feat">
-                        <span class="v-icon">📍</span>
-                        <div>
-                            <h4>100m Geofencing</h4>
-                            <p>Verify coordinates on backend using the Haversine formula.</p>
-                        </div>
-                    </div>
-                    <div class="v-feat">
-                        <span class="v-icon">🔒</span>
-                        <div>
-                            <h4>Role Isolation</h4>
-                            <p>Dedicated modules for Admin control, Staff scheduling & Student check-ins.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="visual-footer">
-                    ———— NEXUS SECURITY PROTOCOL 2.4.0
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Panel - Login Card Form -->
+        <!-- Left Panel - Login Card Form -->
         <div class="login-container">
             <div class="login-header">
                 <h2>Welcome Back!</h2>
@@ -149,9 +119,42 @@
                 </div>
             </div>
         </div>
+
+        <!-- Right Panel - Corporate Branding & Features -->
+        <div class="login-visual">
+            <div class="visual-image-wrapper">
+                <img src="login_visual_asset.png" alt="Smart Student Portal Visual" class="floating-orb-img">
+            </div>
+            <div class="visual-content">
+                <span class="badge">Main Feature</span>
+                <h1>Smart Student Management Portal</h1>
+                <p>An advanced, radius-bounded geolocational check-in platform combined with modern student academic and fee analytics dashboard.</p>
+                
+                <div class="visual-features">
+                    <div class="v-feat">
+                        <span class="v-icon">📍</span>
+                        <div>
+                            <h4>Geofencing & Manual Modes</h4>
+                            <p>Validate boundaries on backend or record classroom attendance manually.</p>
+                        </div>
+                    </div>
+                    <div class="v-feat">
+                        <span class="v-icon">💳</span>
+                        <div>
+                            <h4>Fees Management</h4>
+                            <p>Monitor collection stats, settle balances, and dispatch automated notification alerts.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="visual-footer">
+                    ———— NEXUS PORTAL PROTOCOL 2.5.0
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="script.js?v=2.4.1"></script>
+    <script src="script.js?v=2.5.0"></script>
     <script>
         // Inline UI helper to keep role cards styles synchronized instantly with radio changes
         function updateRoleUI(selectedRole) {
