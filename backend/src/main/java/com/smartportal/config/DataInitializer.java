@@ -4,6 +4,7 @@ import com.smartportal.models.*;
 import com.smartportal.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalTime;
@@ -11,6 +12,9 @@ import java.util.List;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private DepartmentRepository departmentRepository;
@@ -33,50 +37,37 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private FeeRecordRepository feeRecordRepository;
 
-    @Autowired
-    private AuditLogRepository auditLogRepository;
-
-    @Autowired
-    private NotificationRepository notificationRepository;
-
-    @Autowired
-    private LeaveRequestRepository leaveRequestRepository;
-
-    @Autowired
-    private SubmissionRepository submissionRepository;
-
-    @Autowired
-    private AssignmentRepository assignmentRepository;
-
-    @Autowired
-    private AttendanceRecordRepository attendanceRecordRepository;
-
-    @Autowired
-    private AttendanceSessionRepository attendanceSessionRepository;
-
-    @Autowired
-    private FaceProfileRepository faceProfileRepository;
-
     @Override
     public void run(String... args) throws Exception {
         System.out.println("[DATA INITIALIZER] Resetting sandbox database tables...");
 
-        // 0. Clear tables in correct dependency order to prevent foreign key violations
-        auditLogRepository.deleteAll();
-        notificationRepository.deleteAll();
-        leaveRequestRepository.deleteAll();
-        submissionRepository.deleteAll();
-        assignmentRepository.deleteAll();
-        attendanceRecordRepository.deleteAll();
-        attendanceSessionRepository.deleteAll();
-        faceProfileRepository.deleteAll();
-        timetableRepository.deleteAll();
-        feeRecordRepository.deleteAll();
-        studentRepository.deleteAll();
-        staffRepository.deleteAll();
-        adminRepository.deleteAll();
-        subjectRepository.deleteAll();
-        departmentRepository.deleteAll();
+        try {
+            // Disable foreign key checks for clean deletion
+            jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0;");
+
+            // Purge all tables in order
+            jdbcTemplate.execute("DELETE FROM audit_logs;");
+            jdbcTemplate.execute("DELETE FROM notifications;");
+            jdbcTemplate.execute("DELETE FROM leave_requests;");
+            jdbcTemplate.execute("DELETE FROM submissions;");
+            jdbcTemplate.execute("DELETE FROM assignments;");
+            jdbcTemplate.execute("DELETE FROM attendance_records;");
+            jdbcTemplate.execute("DELETE FROM attendance_sessions;");
+            jdbcTemplate.execute("DELETE FROM face_profiles;");
+            jdbcTemplate.execute("DELETE FROM timetable;");
+            jdbcTemplate.execute("DELETE FROM fee_records;");
+            jdbcTemplate.execute("DELETE FROM students;");
+            jdbcTemplate.execute("DELETE FROM staff;");
+            jdbcTemplate.execute("DELETE FROM admins;");
+            jdbcTemplate.execute("DELETE FROM subjects;");
+            jdbcTemplate.execute("DELETE FROM departments;");
+
+            // Re-enable foreign key checks
+            jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1;");
+            System.out.println("[DATA INITIALIZER] Database tables purged successfully.");
+        } catch (Exception e) {
+            System.err.println("[DATA INITIALIZER] Failed to purge tables: " + e.getMessage());
+        }
 
         System.out.println("[DATA INITIALIZER] Seeding fresh sandbox data...");
 
