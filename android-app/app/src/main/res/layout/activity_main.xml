@@ -1,17 +1,161 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout 
+<RelativeLayout 
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#f8fafc">
 
-    <WebView
-        android:id="@+id/webView"
+    <!-- Swipe Refresh Layout containing WebView -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefreshLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- Horizontal Progress Bar for loading pages -->
+    <ProgressBar
+        android:id="@+id/loadingProgressBar"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_alignParentTop="true"
+        android:progressDrawable="@android:drawable/progress_horizontal"
+        android:progressTint="#5046e6"
+        android:visibility="gone" />
+
+    <!-- Native Splash Screen Overlay -->
+    <RelativeLayout
+        android:id="@+id/splashOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:background="#5046e6"
+        android:elevation="10dp"
+        android:clickable="true"
+        android:focusable="true">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <!-- Logo -->
+            <TextView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:text="⚡"
+                android:textSize="48sp"
+                android:gravity="center"
+                android:background="#1affffff"
+                android:textColor="#ffffff"
+                android:layout_marginBottom="16dp" />
+
+            <!-- App Title -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Smart Student Portal"
+                android:textColor="#ffffff"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="NEXUS PORTAL PROTOCOL"
+                android:textColor="#b3ffffff"
+                android:textSize="11sp"
+                android:letterSpacing="0.15"
+                android:textStyle="bold"
+                android:layout_marginBottom="40dp" />
+
+            <!-- circular loading spinner -->
+            <ProgressBar
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:indeterminate="true"
+                android:indeterminateTint="#ffffff" />
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="24dp"
+            android:text="Secure Mobile Access"
+            android:textColor="#80ffffff"
+            android:textSize="12sp" />
+
+    </RelativeLayout>
+
+    <!-- Native Offline Screen Overlay -->
+    <LinearLayout
+        android:id="@+id/offlineOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#f8fafc"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        android:elevation="9dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <!-- Disconnect Graphic / Emoji -->
+        <TextView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:text="📡"
+            android:textSize="64sp"
+            android:gravity="center"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Connection Lost"
+            android:textColor="#0f172a"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Subtitle -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No internet connection detected. Please verify your connection status and try again."
+            android:textColor="#64748b"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:lineSpacingMultiplier="1.2"
+            android:layout_marginBottom="32dp" />
+
+        <!-- Retry Button -->
+        <Button
+            android:id="@+id/btnRetry"
+            android:layout_width="200dp"
+            android:layout_height="48dp"
+            android:text="Retry Connection"
+            android:textAllCaps="false"
+            android:textColor="#ffffff"
+            android:backgroundTint="#5046e6"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+</RelativeLayout>

@@ -87,11 +87,19 @@ function initLoginPage() {
 
     // Show/hide biometric quick unlock button depending on availability
     const bioBtn = document.getElementById("biometric-login-btn");
-    if (bioBtn && window.PublicKeyCredential) {
-        if (localStorage.getItem("biometricEnabled") === "true") {
-            bioBtn.style.display = "block";
-        } else {
-            bioBtn.style.display = "none";
+    if (bioBtn) {
+        if (window.Android) {
+            if (window.Android.isBiometricsSupported() && window.Android.isCredentialsSaved()) {
+                bioBtn.style.display = "block";
+            } else {
+                bioBtn.style.display = "none";
+            }
+        } else if (window.PublicKeyCredential) {
+            if (localStorage.getItem("biometricEnabled") === "true") {
+                bioBtn.style.display = "block";
+            } else {
+                bioBtn.style.display = "none";
+            }
         }
     }
 
@@ -138,8 +146,16 @@ function initLoginPage() {
             localStorage.setItem("userName", data.name);
             localStorage.setItem("userId", data.id);
 
-            // Register web biometrics (WebAuthn) if not set up yet
-            if (window.PublicKeyCredential && localStorage.getItem("biometricEnabled") !== "true") {
+            // Register biometrics if not set up yet
+            if (window.Android) {
+                if (window.Android.isBiometricsSupported() && !window.Android.isCredentialsSaved()) {
+                    const registerBio = confirm("Would you like to enable Android Biometric Quick Unlock for faster login next time?");
+                    if (registerBio) {
+                        window.Android.registerCredentials(username, password, role);
+                        alert("Biometric Quick Unlock registered successfully!");
+                    }
+                }
+            } else if (window.PublicKeyCredential && localStorage.getItem("biometricEnabled") !== "true") {
                 const registerBio = confirm("Would you like to register Biometrics (Windows Hello / Touch ID) for quick login on this device?");
                 if (registerBio) {
                     try {
@@ -1856,6 +1872,11 @@ window.handleBiometricLogin = async function() {
     const errorBanner = document.getElementById("login-error");
     if (errorBanner) errorBanner.classList.add("hide");
 
+    if (window.Android) {
+        window.Android.triggerBiometricPrompt();
+        return;
+    }
+
     if (localStorage.getItem("biometricEnabled") !== "true") {
         alert("Biometrics not registered on this device. Please log in with username/password first.");
         return;
@@ -1885,6 +1906,31 @@ window.handleBiometricLogin = async function() {
             errorBanner.classList.remove("hide");
             errorBanner.querySelector(".err-msg").textContent = "Biometric authentication failed: " + err.message;
         }
+    }
+};
+
+window.onBiometricSuccess = function(username, password, role) {
+    const loginForm = document.getElementById("login-form");
+    if (!loginForm) return;
+
+    document.getElementById("username").value = username;
+    document.getElementById("password").value = password;
+
+    const roleRadio = loginForm.querySelector(`input[name='role'][value='${role}']`);
+    if (roleRadio) {
+        roleRadio.checked = true;
+        if (typeof updateRoleUI === 'function') {
+            updateRoleUI(role);
+        }
+    }
+
+    // Submit the form
+    const submitBtn = document.getElementById("login-submit-btn");
+    if (submitBtn) {
+        submitBtn.click();
+    } else {
+        const submitEvent = new Event("submit", { cancelable: true });
+        loginForm.dispatchEvent(submitEvent);
     }
 };
 
