@@ -30,6 +30,9 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private TimetableRepository timetableRepository;
 
+    @Autowired
+    private FeeRecordRepository feeRecordRepository;
+
     @Override
     public void run(String... args) throws Exception {
         if (adminRepository.count() > 0) {
@@ -62,6 +65,11 @@ public class DataInitializer implements CommandLineRunner {
         Student john = studentRepository.save(new Student(null, "student_john", "student123", "john@student.edu", "John Doe", "CSE-2026-001", csDept, 100.0));
         Student jane = studentRepository.save(new Student(null, "student_jane", "student123", "jane@student.edu", "Jane Miller", "CSE-2026-002", csDept, 100.0));
         Student bob = studentRepository.save(new Student(null, "student_bob", "student123", "bob@student.edu", "Bob Wilson", "IT-2026-001", itDept, 100.0));
+
+        // 5b. Fee Records
+        feeRecordRepository.save(new FeeRecord(null, john, 5000.0, 5000.0, "PAID", java.time.LocalDate.now().minusMonths(1), null));
+        feeRecordRepository.save(new FeeRecord(null, jane, 5000.0, 2000.0, "PENDING", java.time.LocalDate.now().plusMonths(1), null));
+        feeRecordRepository.save(new FeeRecord(null, bob, 6000.0, 1500.0, "OVERDUE", java.time.LocalDate.now().minusWeeks(1), null));
 
         // 6. Timetable
         timetableRepository.save(new Timetable(null, dsa, profSmith, "MONDAY", LocalTime.of(9, 0), LocalTime.of(10, 30), "Room LH-101"));

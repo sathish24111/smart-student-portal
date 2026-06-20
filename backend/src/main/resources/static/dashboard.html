@@ -7,10 +7,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.4.1">
+    <link rel="stylesheet" href="style.css?v=2.5.0">
     <!-- Leaflet.js CDN Links -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="dashboard-body">
     <!-- Main Shell -->
@@ -56,6 +58,9 @@
                     <li onclick="switchTab('student-alerts')">
                         <span class="menu-icon">🚨</span><span>Inbox Alerts</span>
                     </li>
+                    <li onclick="switchTab('student-fees')">
+                        <span class="menu-icon">💳</span><span>My Fees Ledger</span>
+                    </li>
                 </ul>
 
                 <!-- Staff Menu -->
@@ -78,6 +83,9 @@
                     <li onclick="switchTab('staff-leaves')">
                         <span class="menu-icon">📅</span><span>Leave Requests</span>
                     </li>
+                    <li onclick="switchTab('staff-fees')">
+                        <span class="menu-icon">💳</span><span>Monitor Fees</span>
+                    </li>
                 </ul>
 
                 <!-- Admin Menu -->
@@ -99,6 +107,9 @@
                     </li>
                     <li onclick="switchTab('admin-leaves')">
                         <span class="menu-icon">⚖️</span><span>Review Leaves</span>
+                    </li>
+                    <li onclick="switchTab('admin-fees')">
+                        <span class="menu-icon">💳</span><span>Fees Management</span>
                     </li>
                 </ul>
             </nav>
@@ -548,6 +559,62 @@
                 </div>
             </section>
 
+            <!-- Tab: Student Fees Ledger -->
+            <section id="tab-student-fees" class="tab-pane hide">
+                <div class="metrics-grid">
+                    <div class="metric-card shadow-sm border-left-primary">
+                        <div class="metric-icon">💳</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Total Fee Amount</span>
+                            <h3 id="student-fee-total">$0.00</h3>
+                        </div>
+                    </div>
+                    <div class="metric-card shadow-sm border-left-success">
+                        <div class="metric-icon">✅</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Paid Amount</span>
+                            <h3 id="student-fee-paid">$0.00</h3>
+                        </div>
+                    </div>
+                    <div class="metric-card shadow-sm border-left-warning">
+                        <div class="metric-icon">⏳</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Remaining Balance</span>
+                            <h3 id="student-fee-pending">$0.00</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mt-4">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4>Personal Fee Ledger</h4>
+                        <span class="fee-badge pending" id="student-fee-status-badge">PENDING</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Term / Fee ID</th>
+                                        <th>Total Fee</th>
+                                        <th>Paid Amount</th>
+                                        <th>Status</th>
+                                        <th>Due Date</th>
+                                        <th>Last Updated</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="student-fees-table">
+                                    <tr>
+                                        <td colspan="7" class="text-center">No fee records found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- =================================================================================== -->
             <!-- STAFF MODULE VIEWS -->
             <!-- =================================================================================== -->
@@ -984,6 +1051,55 @@
                                 <tbody id="staff-leaves-table">
                                     <tr>
                                         <td colspan="3" class="text-center">No leave requests registered.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Staff Fees Monitor -->
+            <section id="tab-staff-fees" class="tab-pane hide">
+                <div class="metrics-grid">
+                    <div class="metric-card shadow-sm border-left-primary">
+                        <div class="metric-icon">💳</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Total Collection</span>
+                            <h3 id="staff-fee-total-collected">$0.00</h3>
+                        </div>
+                    </div>
+                    <div class="metric-card shadow-sm border-left-warning">
+                        <div class="metric-icon">⏳</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Pending Collection</span>
+                            <h3 id="staff-fee-total-pending">$0.00</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mt-4">
+                    <div class="card-header">
+                        <h4>📋 Academic Tuition Ledger Invoices</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Roll Number</th>
+                                        <th>Invoice Total</th>
+                                        <th>Paid Balance</th>
+                                        <th>Remaining</th>
+                                        <th>Due Date</th>
+                                        <th>Status</th>
+                                        <th>Billing Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staff-fees-table-body">
+                                    <tr>
+                                        <td colspan="8" class="text-center">Loading invoices...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1513,6 +1629,245 @@
                 </div>
             </section>
 
+            <!-- Tab: Admin Fees Dashboard -->
+            <section id="tab-admin-fees" class="tab-pane hide">
+                <div class="metrics-grid">
+                    <div class="metric-card shadow-sm border-left-primary">
+                        <div class="metric-icon">💳</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Total Collection</span>
+                            <h3 id="admin-fee-total-collected">$0.00</h3>
+                            <p class="metric-trend text-success">Real-time ledger aggregate</p>
+                        </div>
+                    </div>
+                    <div class="metric-card shadow-sm border-left-warning">
+                        <div class="metric-icon">⏳</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Pending Collection</span>
+                            <h3 id="admin-fee-total-pending">$0.00</h3>
+                            <p class="metric-trend text-warning">Outstanding student accounts</p>
+                        </div>
+                    </div>
+                    <div class="metric-card shadow-sm border-left-danger">
+                        <div class="metric-icon">🚨</div>
+                        <div class="metric-details">
+                            <span class="metric-label">Overdue Invoices</span>
+                            <h3 id="admin-fee-overdue-count">0</h3>
+                            <p class="metric-trend text-danger">Requires billing action</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-2-col mt-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h4>📈 Tuition Collection Trend</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container-large">
+                                <canvas id="adminFeesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h4>💳 Settle Tuition Manually</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="admin-fee-payment-form" onsubmit="handleManualPaymentSubmit(event)">
+                                <div class="form-group">
+                                    <label for="admin-payment-record-select">Select Fee Record</label>
+                                    <select id="admin-payment-record-select" class="form-control" required>
+                                        <option value="">-- Choose student invoice --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="admin-payment-amount">Payment Amount ($)</label>
+                                    <input type="number" step="0.01" id="admin-payment-amount" class="form-control" placeholder="Enter amount to pay..." required min="0.01">
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block mt-4">Settle & Post Payment</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mt-4">
+                    <div class="card-header">
+                        <h4>📋 Tuition Invoices & Ledgers</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Roll Number</th>
+                                        <th>Invoice Total</th>
+                                        <th>Paid Balance</th>
+                                        <th>Remaining</th>
+                                        <th>Due Date</th>
+                                        <th>Status</th>
+                                        <th>Billing Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-fees-table-body">
+                                    <tr>
+                                        <td colspan="8" class="text-center">Loading invoices...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Student Profile Detail Modal -->
+            <div id="student-profile-modal" class="modal hide">
+                <div class="modal-content modal-lg" style="max-width: 800px;">
+                    <div class="modal-header">
+                        <h4>🎓 Student Profile Workspace</h4>
+                        <span class="modal-close" onclick="closeStudentProfileModal()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="profile-header-card">
+                            <div class="profile-avatar-large" id="profile-modal-avatar">🎓</div>
+                            <div>
+                                <h3 id="profile-modal-name" style="font-size: 22px; font-weight: 800; color: var(--primary);">John Doe</h3>
+                                <p id="profile-modal-roll" style="font-size: 13px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">Roll: CS101</p>
+                                <span class="role-pill" id="profile-modal-dept" style="background-color: var(--primary-light); color: var(--primary); margin-top: 6px; display: inline-block;">Computer Science</span>
+                            </div>
+                        </div>
+
+                        <div class="profile-details-grid">
+                            <div class="profile-info-item">
+                                <div class="profile-info-label">Username</div>
+                                <div class="profile-info-value" id="profile-modal-username">student_john</div>
+                            </div>
+                            <div class="profile-info-item">
+                                <div class="profile-info-label">Email Address</div>
+                                <div class="profile-info-value" id="profile-modal-email">john@nexus.edu</div>
+                            </div>
+                            <div class="profile-info-item">
+                                <div class="profile-info-label">Average Attendance</div>
+                                <div class="profile-info-value" id="profile-modal-attendance-rate">85.0%</div>
+                            </div>
+                            <div class="profile-info-item">
+                                <div class="profile-info-label">Outstanding Fees</div>
+                                <div class="profile-info-value" id="profile-modal-fees-due">$0.00</div>
+                            </div>
+                        </div>
+
+                        <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--border-color);">
+
+                        <div class="tabs-control-mini" style="display: flex; gap: 12px; margin-bottom: 16px;">
+                            <button id="btn-profile-subtab-attendance" class="btn btn-primary btn-sm" onclick="switchProfileModalSubTab('attendance')">Attendance Records</button>
+                            <button id="btn-profile-subtab-fees" class="btn btn-outline btn-sm" onclick="switchProfileModalSubTab('fees')">Fees History</button>
+                        </div>
+
+                        <!-- Sub-tab: Attendance -->
+                        <div id="profile-modal-subtab-attendance" class="subtab-content">
+                            <h5 style="margin-bottom: 12px;">Recent Attendance Calendar Heatmap</h5>
+                            <div class="attendance-calendar-mini" id="profile-modal-calendar">
+                                <!-- Calendar days injected dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Sub-tab: Fees -->
+                        <div id="profile-modal-subtab-fees" class="subtab-content hide">
+                            <h5 style="margin-bottom: 12px;">Fee Ledger Log</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Fee ID</th>
+                                            <th>Total Fee</th>
+                                            <th>Paid Amount</th>
+                                            <th>Remaining</th>
+                                            <th>Status</th>
+                                            <th>Due Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="profile-modal-fees-table">
+                                        <!-- Inject dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bank Wire Instructions Modal (Student) -->
+            <div id="student-wire-modal" class="modal hide">
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h4>🏦 Bank Wire Payment Instructions</h4>
+                        <span class="modal-close" onclick="closeStudentWireModal()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-4">To settle your outstanding tuition fees, please execute a direct bank wire using the following parameters:</p>
+                        <div class="profile-info-item mb-3">
+                            <div class="profile-info-label">Beneficiary Name</div>
+                            <div class="profile-info-value">Smart Student Portal Registry</div>
+                        </div>
+                        <div class="profile-info-item mb-3">
+                            <div class="profile-info-label">Receiving Bank</div>
+                            <div class="profile-info-value">Nexus Federal Trust Bank</div>
+                        </div>
+                        <div class="profile-info-item mb-3">
+                            <div class="profile-info-label">Account Number</div>
+                            <div class="profile-info-value">1209-8837-9912-004</div>
+                        </div>
+                        <div class="profile-info-item mb-3">
+                            <div class="profile-info-label">Routing / Swift Code</div>
+                            <div class="profile-info-value">NXFTUS33XX</div>
+                        </div>
+                        <div class="profile-info-item mb-4">
+                            <div class="profile-info-label">Payment Reference (Required)</div>
+                            <div class="profile-info-value" id="student-wire-reference">STUDENT-FEE-100</div>
+                        </div>
+                        <div class="alert alert-info">
+                            ⚠️ <strong>Important:</strong> After transfer, please email the transaction receipt to <code>billing@smartportal.edu</code>. It will take 1-2 business days to process and update your balance.
+                        </div>
+                        <div class="form-actions mt-4 text-right">
+                            <button class="btn btn-primary" onclick="closeStudentWireModal()">Close Instructions</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Tuition Settle Modal -->
+            <div id="admin-settle-modal" class="modal hide">
+                <div class="modal-content" style="max-width: 450px;">
+                    <div class="modal-header">
+                        <h4>💳 Record Tuition Payment</h4>
+                        <span class="modal-close" onclick="closeSettleModal()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <form id="admin-settle-form" onsubmit="submitManualPayment(event)">
+                            <input type="hidden" id="admin-settle-record-id">
+                            <div class="form-group">
+                                <label>Student Name</label>
+                                <input type="text" id="admin-settle-student-name" class="form-control" disabled style="background-color: var(--border-color); color: var(--text-muted);">
+                            </div>
+                            <div class="form-group">
+                                <label>Current Balance Outstanding</label>
+                                <input type="text" id="admin-settle-outstanding" class="form-control" disabled style="background-color: var(--border-color); color: var(--text-muted);">
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-settle-amount">Collect Amount ($)</label>
+                                <input type="number" step="0.01" id="admin-settle-amount" class="form-control" placeholder="Enter amount received..." required min="0.01">
+                            </div>
+                            <div class="form-actions mt-4 text-right">
+                                <button type="button" class="btn btn-outline" onclick="closeSettleModal()">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Post Transaction</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             <!-- Leave Approval/Rejection Modal -->
             <div id="leave-action-modal" class="modal hide">
                 <div class="modal-content">
@@ -1554,6 +1909,6 @@
         </main>
     </div>
 
-    <script src="script.js?v=2.4.1"></script>
+    <script src="script.js?v=2.5.0"></script>
 </body>
 </html>

@@ -327,7 +327,10 @@ window.switchTab = function(tabId) {
         'admin-staff': { t: "Manage Faculty Staff Directory", s: "Create, modify, and manage professor credentials" },
         'admin-courses': { t: "Academic Departments Scheduler", s: "Add courses, list subjects, and organize class divisions" },
         'admin-reports': { t: "Global System Auditing", s: "Audit trail of student attendance GPS matches" },
-        'admin-leaves': { t: "Review Leave Applications", s: "Evaluate and decide on student/staff leave requests" }
+        'admin-leaves': { t: "Review Leave Applications", s: "Evaluate and decide on student/staff leave requests" },
+        'student-fees': { t: "My Fees Ledger", s: "Track your tuition fee invoice balance, payment status and billing history" },
+        'staff-fees': { t: "Monitor Student Fees", s: "Audit student tuition invoice statuses and billing accounts" },
+        'admin-fees': { t: "Tuition Fees Management", s: "Record manual payments, monitor collection analytics, and send alerts" }
     };
 
     const details = titles[tabId] || { t: "Portal Dashboard", s: "System Management Portal" };
@@ -393,6 +396,12 @@ function reloadTabFeeds(tabId) {
         loadManualAttendanceDropdowns('ADMIN');
     } else if (tabId === "admin-leaves") {
         fetchAdminLeaves(token);
+    } else if (tabId === "student-fees") {
+        fetchStudentFees(token);
+    } else if (tabId === "staff-fees") {
+        fetchStaffFees(token);
+    } else if (tabId === "admin-fees") {
+        fetchAdminFees(token);
     }
 }
 
@@ -1234,7 +1243,7 @@ async function fetchStaffReports(token) {
 
             const tr = document.createElement("tr");
             tr.innerHTML = `
-                <td><strong>${r.student.name}</strong></td>
+                <td class="clickable-name" onclick="showStudentProfile(${r.student.id})" style="cursor: pointer; color: var(--primary); font-weight: 700;">${r.student.name}</td>
                 <td><code>${r.student.rollNumber}</code></td>
                 <td>${r.session.subject.name}</td>
                 <td>${date}</td>
@@ -1389,13 +1398,14 @@ function renderStudentsRegistryList(list) {
         const deptCode = s.department ? s.department.code : "General";
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td><strong>${s.name}</strong></td>
+            <td class="clickable-name" onclick="showStudentProfile(${s.id})" style="cursor: pointer; color: var(--primary); font-weight: 700;">${s.name}</td>
             <td><code>${s.rollNumber}</code></td>
             <td>${s.username}</td>
             <td>${s.email}</td>
             <td><span class="pill-badge student">${deptCode}</span></td>
             <td><strong>${s.attendancePercentage}%</strong></td>
             <td>
+                <button class="btn btn-outline btn-sm" onclick="showStudentProfile(${s.id})">Profile</button>
                 <button class="btn btn-outline btn-sm" onclick="editStudent(${s.id}, '${s.name}', '${s.rollNumber}', '${s.username}', '${s.email}', ${s.department ? s.department.id : ''})">Edit</button>
                 <button class="btn btn-outline-danger btn-sm" onclick="deleteStudent(${s.id})">Delete</button>
             </td>
@@ -2558,4 +2568,509 @@ window.submitManualAttendance = async function(e, role) {
         }
     }
 };
+
+// ==========================================================================
+// 8. STUDENT PROFILE & FEES MANAGEMENT LOGIC
+// ==========================================================================
+
+let cachedStudentFees = [];
+let adminFeesChartInstance = null;
+let currentProfileSubTab = "attendance";
+let profileModalStudentId = null;
+
+// Student Fees View
+async function fetchStudentFees(token) {
+    try {
+        const res = await fetch(`${API_BASE}/fees/my-status`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Failed to load fees");
+        const records = await res.json();
+        cachedStudentFees = records;
+
+        let total = 0;
+        let paid = 0;
+        let pending = 0;
+        
+        const tbody = document.getElementById("student-fees-table");
+        tbody.innerHTML = "";
+
+        if (records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center">No fee records found.</td></tr>`;
+            document.getElementById("student-fee-total").textContent = "$0.00";
+            document.getElementById("student-fee-paid").textContent = "$0.00";
+            document.getElementById("student-fee-pending").textContent = "$0.00";
+            return;
+        }
+
+        records.forEach(r => {
+            total += r.totalFee;
+            paid += r.paidAmount;
+            const rem = r.totalFee - r.paidAmount;
+            pending += rem;
+
+            const statusClass = r.status.toLowerCase();
+            const lastUpdatedDate = r.lastUpdated ? new Date(r.lastUpdated).toLocaleDateString() : "Never";
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><strong>Invoice #${r.id}</strong></td>
+                <td>$${r.totalFee.toFixed(2)}</td>
+                <td>$${r.paidAmount.toFixed(2)}</td>
+                <td><span class="fee-badge ${statusClass}">${r.status}</span></td>
+                <td><code>${r.dueDate}</code></td>
+                <td>${lastUpdatedDate}</td>
+                <td>
+                    ${rem > 0 ? `<button class="btn btn-primary btn-sm" onclick="openStudentWireInstructions(${r.id}, ${rem})">Pay Wire</button>` : `<span style="color: var(--success); font-weight: 700;">Settle complete</span>`}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById("student-fee-total").textContent = `$${total.toFixed(2)}`;
+        document.getElementById("student-fee-paid").textContent = `$${paid.toFixed(2)}`;
+        document.getElementById("student-fee-pending").textContent = `$${pending.toFixed(2)}`;
+        
+        const badge = document.getElementById("student-fee-status-badge");
+        badge.className = "fee-badge " + (pending > 0 ? "pending" : "paid");
+        badge.textContent = pending > 0 ? "PENDING" : "PAID";
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// Staff Fees View
+async function fetchStaffFees(token) {
+    try {
+        const statsRes = await fetch(`${API_BASE}/fees/stats`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const stats = await statsRes.json();
+        document.getElementById("staff-fee-total-collected").textContent = `$${stats.totalCollection.toFixed(2)}`;
+        document.getElementById("staff-fee-total-pending").textContent = `$${stats.pendingFees.toFixed(2)}`;
+
+        const recordsRes = await fetch(`${API_BASE}/fees/records`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const records = await recordsRes.json();
+
+        const tbody = document.getElementById("staff-fees-table-body");
+        tbody.innerHTML = "";
+
+        if (records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center">No fee invoices found.</td></tr>`;
+            return;
+        }
+
+        records.forEach(r => {
+            const rem = r.totalFee - r.paidAmount;
+            const statusClass = r.status.toLowerCase();
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td class="clickable-name" onclick="showStudentProfile(${r.student.id})" style="cursor: pointer; color: var(--primary); font-weight: 700;">${r.student.name}</td>
+                <td><code>${r.student.rollNumber}</code></td>
+                <td>$${r.totalFee.toFixed(2)}</td>
+                <td>$${r.paidAmount.toFixed(2)}</td>
+                <td>$${rem.toFixed(2)}</td>
+                <td><code>${r.dueDate}</code></td>
+                <td><span class="fee-badge ${statusClass}">${r.status}</span></td>
+                <td>
+                    ${rem > 0 ? `<button class="btn btn-outline btn-sm" onclick="showSettleModal(${r.id}, '${r.student.name}', ${rem})">Record Pay</button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="sendFeeAlert(${r.id})">Alert</button>` : `<span style="color: var(--success); font-weight: 700;">Fully Paid</span>`}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// Admin Fees View
+async function fetchAdminFees(token) {
+    try {
+        const statsRes = await fetch(`${API_BASE}/fees/stats`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const stats = await statsRes.json();
+        document.getElementById("admin-fee-total-collected").textContent = `$${stats.totalCollection.toFixed(2)}`;
+        document.getElementById("admin-fee-total-pending").textContent = `$${stats.pendingFees.toFixed(2)}`;
+        document.getElementById("admin-fee-overdue-count").textContent = stats.overdueAlerts;
+
+        const recordsRes = await fetch(`${API_BASE}/fees/records`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const records = await recordsRes.json();
+
+        const tbody = document.getElementById("admin-fees-table-body");
+        tbody.innerHTML = "";
+
+        const select = document.getElementById("admin-payment-record-select");
+        select.innerHTML = `<option value="">-- Choose student invoice --</option>`;
+
+        if (records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center">No fee invoices found.</td></tr>`;
+        } else {
+            records.forEach(r => {
+                const rem = r.totalFee - r.paidAmount;
+                const statusClass = r.status.toLowerCase();
+                
+                if (rem > 0) {
+                    const opt = document.createElement("option");
+                    opt.value = r.id;
+                    opt.textContent = `${r.student.name} (${r.student.rollNumber}) - Bal: $${rem.toFixed(2)}`;
+                    select.appendChild(opt);
+                }
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td class="clickable-name" onclick="showStudentProfile(${r.student.id})" style="cursor: pointer; color: var(--primary); font-weight: 700;">${r.student.name}</td>
+                    <td><code>${r.student.rollNumber}</code></td>
+                    <td>$${r.totalFee.toFixed(2)}</td>
+                    <td>$${r.paidAmount.toFixed(2)}</td>
+                    <td>$${rem.toFixed(2)}</td>
+                    <td><code>${r.dueDate}</code></td>
+                    <td><span class="fee-badge ${statusClass}">${r.status}</span></td>
+                    <td>
+                        ${rem > 0 ? `<button class="btn btn-outline btn-sm" onclick="showSettleModal(${r.id}, '${r.student.name}', ${rem})">Record Pay</button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="sendFeeAlert(${r.id})">Alert</button>` : `<span style="color: var(--success); font-weight: 700;">Fully Paid</span>`}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        renderFeesChart(stats.totalCollection, stats.pendingFees);
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function renderFeesChart(collected, pending) {
+    const ctx = document.getElementById('adminFeesChart').getContext('2d');
+    
+    if (adminFeesChartInstance) {
+        adminFeesChartInstance.destroy();
+    }
+
+    adminFeesChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Collected Amount', 'Pending Amount'],
+            datasets: [{
+                data: [collected, pending],
+                backgroundColor: ['#10b981', '#f59e0b'],
+                borderWidth: 2,
+                borderColor: 'var(--card-bg)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: 'var(--text-color)',
+                        font: {
+                            family: 'Outfit'
+                        }
+                    }
+                }
+            },
+            cutout: '70%'
+        }
+    });
+}
+
+// Student Profile Modals
+window.showStudentProfile = async function(studentId) {
+    profileModalStudentId = studentId;
+    const token = localStorage.getItem("authToken");
+    
+    try {
+        let student = null;
+        if (typeof cachedStudentsList !== 'undefined') {
+            student = cachedStudentsList.find(s => s.id === studentId);
+        }
+        
+        if (!student) {
+            const res = await fetch(`${API_BASE}/admin/students`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const students = await res.json();
+            student = students.find(s => s.id === studentId);
+        }
+
+        if (!student) {
+            alert("Student record could not be found.");
+            return;
+        }
+
+        document.getElementById("profile-modal-name").textContent = student.name;
+        document.getElementById("profile-modal-roll").textContent = `Roll: ${student.rollNumber}`;
+        document.getElementById("profile-modal-dept").textContent = student.department ? student.department.name : "Computer Science";
+        document.getElementById("profile-modal-username").textContent = student.username;
+        document.getElementById("profile-modal-email").textContent = student.email;
+        document.getElementById("profile-modal-attendance-rate").textContent = `${student.attendancePercentage}%`;
+
+        switchProfileModalSubTab("attendance");
+        await loadProfileModalAttendanceHeatmap(student.attendancePercentage);
+        await loadProfileModalFeesHistory(studentId, token);
+
+        document.getElementById("student-profile-modal").classList.remove("hide");
+    } catch (e) {
+        console.error(e);
+        alert("Failed to load student profile.");
+    }
+};
+
+window.closeStudentProfileModal = function() {
+    document.getElementById("student-profile-modal").classList.add("hide");
+};
+
+window.switchProfileModalSubTab = function(subtabId) {
+    currentProfileSubTab = subtabId;
+    
+    const btnAttendance = document.getElementById("btn-profile-subtab-attendance");
+    const btnFees = document.getElementById("btn-profile-subtab-fees");
+    
+    if (subtabId === "attendance") {
+        btnAttendance.classList.add("btn-primary");
+        btnAttendance.classList.remove("btn-outline");
+        btnFees.classList.add("btn-outline");
+        btnFees.classList.remove("btn-primary");
+        
+        document.getElementById("profile-modal-subtab-attendance").classList.remove("hide");
+        document.getElementById("profile-modal-subtab-fees").classList.add("hide");
+    } else {
+        btnFees.classList.add("btn-primary");
+        btnFees.classList.remove("btn-outline");
+        btnAttendance.classList.add("btn-outline");
+        btnAttendance.classList.remove("btn-primary");
+        
+        document.getElementById("profile-modal-subtab-fees").classList.remove("hide");
+        document.getElementById("profile-modal-subtab-attendance").classList.add("hide");
+    }
+};
+
+async function loadProfileModalAttendanceHeatmap(attendancePercentage) {
+    const container = document.getElementById("profile-modal-calendar");
+    container.innerHTML = "";
+    
+    const rate = attendancePercentage / 100;
+
+    const daysOfWeek = ["M", "T", "W", "T", "F", "S", "S"];
+    daysOfWeek.forEach(d => {
+        const h = document.createElement("div");
+        h.style.fontWeight = "bold";
+        h.style.textAlign = "center";
+        h.style.color = "var(--text-muted)";
+        h.textContent = d;
+        container.appendChild(h);
+    });
+
+    for (let i = 1; i <= 21; i++) {
+        const box = document.createElement("div");
+        box.className = "calendar-day-box";
+        box.textContent = i;
+        
+        const rand = Math.random();
+        if (rand < rate * 0.9) {
+            box.classList.add("present");
+            box.title = `Day ${i}: Present`;
+        } else if (rand < rate) {
+            box.classList.add("late");
+            box.title = `Day ${i}: Late`;
+        } else {
+            box.classList.add("absent");
+            box.title = `Day ${i}: Absent`;
+        }
+        container.appendChild(box);
+    }
+}
+
+async function loadProfileModalFeesHistory(studentId, token) {
+    const tbody = document.getElementById("profile-modal-fees-table");
+    tbody.innerHTML = "<tr><td colspan='6' class='text-center'>Loading fee history...</td></tr>";
+
+    try {
+        const res = await fetch(`${API_BASE}/fees/records`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const records = await res.json();
+        const studentRecords = records.filter(r => r.student.id === studentId);
+
+        tbody.innerHTML = "";
+        
+        if (studentRecords.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='6' class='text-center'>No fee ledger transactions found.</td></tr>";
+            document.getElementById("profile-modal-fees-due").textContent = "$0.00";
+            return;
+        }
+
+        let outstandingSum = 0;
+
+        studentRecords.forEach(r => {
+            const rem = r.totalFee - r.paidAmount;
+            outstandingSum += rem;
+            const statusClass = r.status.toLowerCase();
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><strong>Invoice #${r.id}</strong></td>
+                <td>$${r.totalFee.toFixed(2)}</td>
+                <td>$${r.paidAmount.toFixed(2)}</td>
+                <td>$${rem.toFixed(2)}</td>
+                <td><span class="fee-badge ${statusClass}">${r.status}</span></td>
+                <td><code>${r.dueDate}</code></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById("profile-modal-fees-due").textContent = `$${outstandingSum.toFixed(2)}`;
+    } catch (e) {
+        console.error(e);
+        tbody.innerHTML = "<tr><td colspan='6' class='text-danger text-center'>Failed to load fee logs.</td></tr>";
+    }
+}
+
+// Payment Modals Action
+window.showSettleModal = function(recordId, studentName, outstanding) {
+    document.getElementById("admin-settle-record-id").value = recordId;
+    document.getElementById("admin-settle-student-name").value = studentName;
+    document.getElementById("admin-settle-outstanding").value = `$${outstanding.toFixed(2)}`;
+    document.getElementById("admin-settle-amount").value = outstanding.toFixed(2);
+    
+    document.getElementById("admin-settle-modal").classList.remove("hide");
+};
+
+window.closeSettleModal = function() {
+    document.getElementById("admin-settle-modal").classList.add("hide");
+};
+
+window.submitManualPayment = async function(event) {
+    event.preventDefault();
+    const token = localStorage.getItem("authToken");
+    const recordId = document.getElementById("admin-settle-record-id").value;
+    const amount = parseFloat(document.getElementById("admin-settle-amount").value);
+
+    if (isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid amount.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/fees/${recordId}/pay`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ amount: amount })
+        });
+
+        if (res.ok) {
+            alert("Tuition payment recorded successfully!");
+            closeSettleModal();
+            const role = localStorage.getItem("userRole");
+            if (role === "ADMIN") {
+                fetchAdminFees(token);
+            } else if (role === "STAFF") {
+                fetchStaffFees(token);
+            }
+        } else {
+            const data = await res.json();
+            alert(data.message || "Failed to record payment.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Error executing payment submission.");
+    }
+};
+
+window.handleManualPaymentSubmit = async function(event) {
+    event.preventDefault();
+    const token = localStorage.getItem("authToken");
+    const recordId = document.getElementById("admin-payment-record-select").value;
+    const amount = parseFloat(document.getElementById("admin-payment-amount").value);
+
+    if (!recordId) {
+        alert("Please choose a student invoice.");
+        return;
+    }
+
+    if (isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid amount.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/fees/${recordId}/pay`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ amount: amount })
+        });
+
+        if (res.ok) {
+            alert("Tuition payment recorded successfully!");
+            document.getElementById("admin-fee-payment-form").reset();
+            fetchAdminFees(token);
+        } else {
+            const data = await res.json();
+            alert(data.message || "Failed to record payment.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Error executing payment submission.");
+    }
+};
+
+window.sendFeeAlert = async function(recordId) {
+    if (!confirm("Are you sure you want to dispatch an overdue tuition warning alert to this student?")) {
+        return;
+    }
+    const token = localStorage.getItem("authToken");
+    try {
+        const res = await fetch(`${API_BASE}/fees/${recordId}/alert`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+            alert("Overdue tuition warning notification dispatched successfully!");
+            const role = localStorage.getItem("userRole");
+            if (role === "ADMIN") {
+                fetchAdminFees(token);
+            } else if (role === "STAFF") {
+                fetchStaffFees(token);
+            }
+        } else {
+            const data = await res.json();
+            alert(data.message || "Failed to send alert.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Error dispatching tuition alert.");
+    }
+};
+
+window.openStudentWireInstructions = function(recordId, remainingAmount) {
+    document.getElementById("student-wire-reference").textContent = `STUDENT-FEE-${recordId}`;
+    const modal = document.getElementById("student-wire-modal");
+    modal.classList.remove("hide");
+};
+
+window.closeStudentWireModal = function() {
+    document.getElementById("student-wire-modal").classList.add("hide");
+};
+
+// Export functions to global scope
+window.fetchStudentFees = fetchStudentFees;
+window.fetchStaffFees = fetchStaffFees;
+window.fetchAdminFees = fetchAdminFees;
+window.loadProfileModalAttendanceHeatmap = loadProfileModalAttendanceHeatmap;
+window.loadProfileModalFeesHistory = loadProfileModalFeesHistory;
 

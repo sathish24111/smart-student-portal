@@ -7,10 +7,10 @@
 :root {
     --font-primary: 'Outfit', sans-serif;
     
-    /* Harmonious Light Mode Palette */
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --primary-light: rgba(37, 99, 235, 0.08);
+    /* Harmonious Light Mode Palette (EduStream Style) */
+    --primary: #5046e6;
+    --primary-hover: #4338ca;
+    --primary-light: rgba(80, 70, 230, 0.08);
     --success: #10b981;
     --success-light: rgba(16, 185, 129, 0.1);
     --danger: #ef4444;
@@ -27,26 +27,26 @@
     --text-color: #0f172a;
     --text-muted: #64748b;
     
-    /* Sidebar (Corporate Navy) */
-    --sidebar-bg: #0b1528;
-    --sidebar-text: #94a3b8;
-    --sidebar-active-bg: #1e293b;
-    --sidebar-active: #ffffff;
+    /* Sidebar (EduStream White/Light) */
+    --sidebar-bg: #ffffff;
+    --sidebar-text: #64748b;
+    --sidebar-active-bg: #e0e7ff;
+    --sidebar-active: #5046e6;
     
     /* Shadow & Glass */
     --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 10px 15px -3px rgba(37, 99, 235, 0.05), 0 4px 6px -4px rgba(37, 99, 235, 0.05);
-    --shadow-premium: 0 10px 30px -10px rgba(37, 99, 235, 0.2);
+    --shadow-md: 0 4px 6px -1px rgba(80, 70, 230, 0.08), 0 2px 4px -2px rgba(80, 70, 230, 0.08);
+    --shadow-lg: 0 10px 15px -3px rgba(80, 70, 230, 0.12), 0 4px 6px -4px rgba(80, 70, 230, 0.12);
+    --shadow-premium: 0 10px 30px -10px rgba(80, 70, 230, 0.25);
     
     --glass-bg: rgba(255, 255, 255, 0.8);
     --glass-border: rgba(241, 245, 249, 0.5);
     --glass-blur: 16px;
     
     /* Borders & Radius */
-    --border-radius: 16px;
-    --border-radius-sm: 10px;
-    --border-radius-lg: 24px;
+    --border-radius: 12px;
+    --border-radius-sm: 8px;
+    --border-radius-lg: 20px;
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -58,8 +58,10 @@
     --text-color: #f1f5f9;
     --text-muted: #94a3b8;
     
-    --sidebar-bg: #030712;
-    --sidebar-active-bg: #0f172a;
+    --sidebar-bg: #0c1120;
+    --sidebar-text: #94a3b8;
+    --sidebar-active-bg: rgba(80, 70, 230, 0.15);
+    --sidebar-active: #818cf8;
     
     --glass-bg: rgba(12, 17, 32, 0.8);
     --glass-border: rgba(30, 41, 59, 0.5);
@@ -69,7 +71,7 @@
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
     --shadow-premium: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
     
-    --primary-light: rgba(37, 99, 235, 0.15);
+    --primary-light: rgba(80, 70, 230, 0.2);
 }
 
 /* ==========================================================================
@@ -322,12 +324,42 @@ body {
 /* Left Panel - corporate gradient & grid */
 .login-visual {
     flex: 1.2;
-    background: linear-gradient(135deg, #0b1528 0%, #060b13 100%);
+    background: linear-gradient(135deg, #4f46e5 0%, #1e1b4b 100%);
     position: relative;
     padding: 56px;
     display: flex;
     align-items: center;
     overflow: hidden;
+}
+
+.visual-image-wrapper {
+    position: absolute;
+    right: -5%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 55%;
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.floating-orb-img {
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 20px 50px rgba(80, 70, 230, 0.45));
+    animation: orbFloat 6s ease-in-out infinite;
+}
+
+@keyframes orbFloat {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
 }
 
 /* Dot Grid Overlay */
@@ -731,7 +763,7 @@ body {
 }
 
 .sidebar-brand h3 {
-    color: #ffffff;
+    color: var(--primary);
     font-size: 20px;
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -815,13 +847,13 @@ body {
 
 .menu-list li:hover {
     background-color: var(--sidebar-active-bg);
-    color: #ffffff;
+    color: var(--sidebar-active);
 }
 
 .menu-list li.active {
-    background-color: var(--primary);
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    background-color: var(--sidebar-active-bg);
+    color: var(--sidebar-active);
+    box-shadow: 0 4px 12px rgba(80, 70, 230, 0.15);
 }
 
 .menu-icon {
@@ -1848,5 +1880,131 @@ code {
 .badge-pill.rejected {
     background-color: var(--danger-light);
     color: var(--danger);
+}
+
+/* ==========================================================================
+   8. STUDENT PROFILE & FEES MANAGEMENT STYLES
+   ========================================================================== */
+
+/* Profile Grid & Layout */
+.profile-header-card {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 24px;
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.profile-avatar-large {
+    font-size: 40px;
+    width: 80px;
+    height: 80px;
+    background: var(--primary-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--primary);
+}
+
+.profile-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.profile-info-item {
+    padding: 12px 16px;
+    background: var(--bg-color);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.profile-info-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.profile-info-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* Attendance calendar grid */
+.attendance-calendar-mini {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.calendar-day-box {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.calendar-day-box.present {
+    background-color: var(--success-light);
+    color: var(--success);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.calendar-day-box.late {
+    background-color: var(--warning-light);
+    color: var(--warning);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.calendar-day-box.absent {
+    background-color: var(--danger-light);
+    color: var(--danger);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* Fees Cards & tables */
+.fee-badge {
+    padding: 6px 12px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.fee-badge.paid {
+    background-color: var(--success-light);
+    color: var(--success);
+}
+
+.fee-badge.pending {
+    background-color: var(--warning-light);
+    color: var(--warning);
+}
+
+.fee-badge.overdue {
+    background-color: var(--danger-light);
+    color: var(--danger);
+}
+
+/* Charts responsive grid */
+.chart-container-large {
+    position: relative;
+    height: 280px;
+    width: 100%;
 }
 

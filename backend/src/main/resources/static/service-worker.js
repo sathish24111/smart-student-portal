@@ -1,9 +1,9 @@
-const CACHE_NAME = "geoportal-web-cache-v2";
+const CACHE_NAME = "geoportal-web-cache-v3";
 const ASSETS = [
     "index.html",
     "dashboard.html",
-    "style.css?v=2.4.1",
-    "script.js?v=2.4.1",
+    "style.css?v=2.5.0",
+    "script.js?v=2.5.0",
     "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
     "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 ];
