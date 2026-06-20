@@ -33,14 +33,52 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private FeeRecordRepository feeRecordRepository;
 
+    @Autowired
+    private AuditLogRepository auditLogRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private LeaveRequestRepository leaveRequestRepository;
+
+    @Autowired
+    private SubmissionRepository submissionRepository;
+
+    @Autowired
+    private AssignmentRepository assignmentRepository;
+
+    @Autowired
+    private AttendanceRecordRepository attendanceRecordRepository;
+
+    @Autowired
+    private AttendanceSessionRepository attendanceSessionRepository;
+
+    @Autowired
+    private FaceProfileRepository faceProfileRepository;
+
     @Override
     public void run(String... args) throws Exception {
-        if (adminRepository.count() > 0) {
-            System.out.println("[DATA INITIALIZER] Database already has data. Skipping initialization.");
-            return;
-        }
+        System.out.println("[DATA INITIALIZER] Resetting sandbox database tables...");
 
-        System.out.println("[DATA INITIALIZER] Database is empty. Seeding sandbox data...");
+        // 0. Clear tables in correct dependency order to prevent foreign key violations
+        auditLogRepository.deleteAll();
+        notificationRepository.deleteAll();
+        leaveRequestRepository.deleteAll();
+        submissionRepository.deleteAll();
+        assignmentRepository.deleteAll();
+        attendanceRecordRepository.deleteAll();
+        attendanceSessionRepository.deleteAll();
+        faceProfileRepository.deleteAll();
+        timetableRepository.deleteAll();
+        feeRecordRepository.deleteAll();
+        studentRepository.deleteAll();
+        staffRepository.deleteAll();
+        adminRepository.deleteAll();
+        subjectRepository.deleteAll();
+        departmentRepository.deleteAll();
+
+        System.out.println("[DATA INITIALIZER] Seeding fresh sandbox data...");
 
         // 1. Departments
         Department csDept = departmentRepository.save(new Department(null, "Computer Science & Engineering", "CSE"));
@@ -78,9 +116,6 @@ public class DataInitializer implements CommandLineRunner {
         timetableRepository.save(new Timetable(null, wt, profDavis, "THURSDAY", LocalTime.of(14, 0), LocalTime.of(15, 30), "Room LH-201"));
         timetableRepository.save(new Timetable(null, se, profDavis, "FRIDAY", LocalTime.of(14, 0), LocalTime.of(15, 30), "Room LH-202"));
 
-        System.out.println("[DATA INITIALIZER] Seeding complete! Accounts ready for testing:");
-        System.out.println("   Admin: admin_nexus / admin123");
-        System.out.println("   Staff: prof_smith / staff123, prof_davis / staff123");
-        System.out.println("   Student: student_john / student123, student_jane / student123, student_bob / student123");
+        System.out.println("[DATA INITIALIZER] Seeding complete! Sandbox database is ready.");
     }
 }
